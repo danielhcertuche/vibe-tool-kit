@@ -28,7 +28,9 @@ import seguridad  # noqa: E402
 seguridad.privado()  # todo lo que cree el plugin: archivos 600, carpetas 700
 DATA = os.environ.setdefault("VTK_DATA", os.path.expanduser("~/.cache/meeting-to-backlog"))
 os.makedirs(DATA, exist_ok=True)
-os.chmod(DATA, 0o700)  # Claude Code puede crearla con 755; transcripciones y caché son solo del dueño
+# Claude Code puede crearla con 755; transcripciones y caché son solo del dueño. 0o700 es el permiso más
+# restrictivo para una carpeta (el bit x es necesario para entrar): falso positivo de insecure-file-permissions.
+os.chmod(DATA, 0o700)  # nosemgrep
 
 TOOLS = [
     {"name": "procesar_reunion",
