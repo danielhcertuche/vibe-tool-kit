@@ -15,10 +15,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import red
+
 GRAPH = "https://graph.microsoft.com/v1.0"
 LOGIN = "https://login.microsoftonline.com"
 DELEGATED_SCOPE = "offline_access Files.Read.All"
-UA = "meeting-to-backlog/0.1"
 
 
 class GraphError(RuntimeError):
@@ -26,17 +27,17 @@ class GraphError(RuntimeError):
 
 
 def _abrir(req, timeout):
-    """urlopen solo con https: urllib también acepta file:// y una URL alterada leería archivos locales."""
-    if urllib.parse.urlparse(req.full_url).scheme != "https":
-        raise GraphError("solo se permiten URL https")
-    # El esquema ya está validado arriba, por eso se silencia dynamic-urllib-use-detected.
-    return urllib.request.urlopen(req, timeout=timeout)  # nosemgrep
+    # https obligatorio; /content redirige a una URL pre-autorizada: se sigue sin el token (red.py).
+    try:
+        return red.abrir(req, timeout, seguir_redirecciones=True)
+    except red.RedError as e:
+        raise GraphError(str(e)) from None
 
 
 def _post(url, fields):
     data = urllib.parse.urlencode(fields).encode()
     try:
-        req = urllib.request.Request(url, data=data, headers={"User-Agent": UA})
+        req = urllib.request.Request(url, data=data, headers={})
         with _abrir(req, 60) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
@@ -116,7 +117,7 @@ def token(notify=print):
 
 
 def _get(tok, path):
-    req = urllib.request.Request(GRAPH + path, headers={"Authorization": "Bearer " + tok, "User-Agent": UA})
+    req = urllib.request.Request(GRAPH + path, headers={"Authorization": "Bearer " + tok})
     try:
         with _abrir(req, 120) as r:
             return json.load(r)
@@ -133,7 +134,7 @@ def download(url, dest_dir, notify=print):
     name = os.path.basename(item["name"]) or "grabacion.mp4"
     out = os.path.join(dest_dir, name)
     req = urllib.request.Request(f"{GRAPH}/drives/{drive}/items/{item['id']}/content",
-                                 headers={"Authorization": "Bearer " + tok, "User-Agent": UA})
+                                 headers={"Authorization": "Bearer " + tok})
     total = 0
     with _abrir(req, 1800) as r, open(out, "wb") as f:
         while chunk := r.read(1 << 20):

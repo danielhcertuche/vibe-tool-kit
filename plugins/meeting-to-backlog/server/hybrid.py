@@ -21,6 +21,8 @@ import urllib.request
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
+import red
+
 SR = 16000
 BLOQUE_MAX = 600          # 10 min de FLAC 16 kHz mono ≈ 12–20 MB, bajo el tope de 25 MB de Groq
 URL = os.environ.get("VTK_NUBE_URL", "https://api.groq.com/openai/v1/audio/transcriptions")
@@ -73,12 +75,7 @@ def _flac(audio):
 
 
 def _abrir(req, timeout):
-    """Solo https (o http a 127.0.0.1 para pruebas): urllib también acepta file://."""
-    u = urllib.parse.urlparse(req.full_url)
-    if not (u.scheme == "https" or (u.scheme == "http" and u.hostname in ("127.0.0.1", "localhost"))):
-        raise ValueError("VTK_NUBE_URL debe ser https")
-    # El esquema ya está validado arriba, por eso se silencia dynamic-urllib-use-detected.
-    return urllib.request.urlopen(req, timeout=timeout)  # nosemgrep
+    return red.abrir(req, timeout, seguir_redirecciones=False)  # Groq no redirige: si lo hace, el tramo vuelve a local
 
 
 def _post(data, idioma, key):
@@ -91,9 +88,7 @@ def _post(data, idioma, key):
                  f"Content-Type: audio/flac\r\n\r\n".encode() + data + b"\r\n")
     parts.append(f"--{b}--\r\n".encode())
     req = urllib.request.Request(URL, data=b"".join(parts), headers={
-        "Authorization": "Bearer " + key, "Content-Type": "multipart/form-data; boundary=" + b,
-        # Cloudflare (delante de Groq) rechaza el agente por defecto de urllib con 403 / error 1010.
-        "User-Agent": "meeting-to-backlog/0.1"})
+        "Authorization": "Bearer " + key, "Content-Type": "multipart/form-data; boundary=" + b})
     with _abrir(req, 300) as r:
         return json.load(r)
 

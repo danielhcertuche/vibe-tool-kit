@@ -32,6 +32,7 @@ jobs:
       - run: tests/hooks/test_hooks.sh
       - run: python3 tests/unit/test_cupo.py
       - run: python3 tests/unit/test_postproceso.py
+      - run: python3 tests/unit/test_red.py
 
   denylist:
     runs-on: ubuntu-24.04
