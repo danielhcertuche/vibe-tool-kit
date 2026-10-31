@@ -16,6 +16,7 @@ import json
 import os
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -71,6 +72,15 @@ def _flac(audio):
     return buf.getvalue()
 
 
+def _abrir(req, timeout):
+    """Solo https (o http a 127.0.0.1 para pruebas): urllib también acepta file://."""
+    u = urllib.parse.urlparse(req.full_url)
+    if not (u.scheme == "https" or (u.scheme == "http" and u.hostname in ("127.0.0.1", "localhost"))):
+        raise ValueError("VTK_NUBE_URL debe ser https")
+    # El esquema ya está validado arriba, por eso se silencia dynamic-urllib-use-detected.
+    return urllib.request.urlopen(req, timeout=timeout)  # nosemgrep
+
+
 def _post(data, idioma, key):
     b = "----vtk" + uuid.uuid4().hex
     parts = []
@@ -84,7 +94,7 @@ def _post(data, idioma, key):
         "Authorization": "Bearer " + key, "Content-Type": "multipart/form-data; boundary=" + b,
         # Cloudflare (delante de Groq) rechaza el agente por defecto de urllib con 403 / error 1010.
         "User-Agent": "meeting-to-backlog/0.1"})
-    with urllib.request.urlopen(req, timeout=300) as r:
+    with _abrir(req, 300) as r:
         return json.load(r)
 
 

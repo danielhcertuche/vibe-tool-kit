@@ -25,11 +25,19 @@ class GraphError(RuntimeError):
     pass
 
 
+def _abrir(req, timeout):
+    """urlopen solo con https: urllib también acepta file:// y una URL alterada leería archivos locales."""
+    if urllib.parse.urlparse(req.full_url).scheme != "https":
+        raise GraphError("solo se permiten URL https")
+    # El esquema ya está validado arriba, por eso se silencia dynamic-urllib-use-detected.
+    return urllib.request.urlopen(req, timeout=timeout)  # nosemgrep
+
+
 def _post(url, fields):
     data = urllib.parse.urlencode(fields).encode()
     try:
         req = urllib.request.Request(url, data=data, headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with _abrir(req, 60) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
         body = json.loads(e.read() or b"{}")
@@ -110,7 +118,7 @@ def token(notify=print):
 def _get(tok, path):
     req = urllib.request.Request(GRAPH + path, headers={"Authorization": "Bearer " + tok, "User-Agent": UA})
     try:
-        with urllib.request.urlopen(req, timeout=120) as r:
+        with _abrir(req, 120) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
         raise GraphError(f"Graph respondió {e.code} en {path.split('?')[0]}") from None
@@ -127,7 +135,7 @@ def download(url, dest_dir, notify=print):
     req = urllib.request.Request(f"{GRAPH}/drives/{drive}/items/{item['id']}/content",
                                  headers={"Authorization": "Bearer " + tok, "User-Agent": UA})
     total = 0
-    with urllib.request.urlopen(req, timeout=1800) as r, open(out, "wb") as f:
+    with _abrir(req, 1800) as r, open(out, "wb") as f:
         while chunk := r.read(1 << 20):
             f.write(chunk)
             total += len(chunk)

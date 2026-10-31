@@ -95,6 +95,8 @@ jobs:
           row = json.load(urllib.request.urlopen(u, timeout=60))["rows"][0]["row"]
           open("/tmp/clip.wav", "wb").write(urllib.request.urlopen(row["audio"][0]["src"], timeout=60).read())
           PY
+      - name: ffmpeg (el runner ubuntu-24.04 no lo trae)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg
       - name: video sintético (4 escenas, sin datos reales) con la voz del clip
         run: |
           ffmpeg -v error -y -stream_loop 5 -i /tmp/clip.wav -t 60 -ac 1 -ar 16000 /tmp/voz.wav
