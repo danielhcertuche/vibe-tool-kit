@@ -32,7 +32,7 @@ casos = {
     "secreto de Graph": f"invalid_client para {SECRETO}",
     "cabecera Bearer": "Authorization: Bearer " + BEARER,
     "JWT de Entra": "token " + JWT,
-    "usuario:token en URL": "fatal: https://pat:tok3nFalso123456@example.com/org/_git/repo",
+    "usuario:token en URL": "fatal: https://" + "pat:" + "tok3nFalso123456" + "@example.com/org/_git/repo",
     "firma SAS": "https://almacen.example.com/c?sv=2024&sig=AbC%2Fd3f&se=2026",
 }
 for nombre, texto in casos.items():
