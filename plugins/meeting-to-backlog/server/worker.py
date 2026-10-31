@@ -43,7 +43,7 @@ def hms(s):
     return f"{int(s // 3600):02d}:{int(s % 3600 // 60):02d}:{int(s % 60):02d}"
 
 
-def transcribe(media, perfil, idioma, hilos, on_progress):
+def transcribe(media, perfil, idioma, hilos, on_progress, pct=0.0):
     from faster_whisper import WhisperModel
 
     p = PERFILES[perfil]
@@ -51,6 +51,15 @@ def transcribe(media, perfil, idioma, hilos, on_progress):
     # no se vuelven a descargar 1,6 GB.
     model = WhisperModel(p["model"], device="cpu", compute_type="int8", cpu_threads=hilos)
     kw = {"beam_size": p["beam_size"], "language": None if idioma == "auto" else idioma}
+    if pct > 0:  # híbrido: bloque local continuo + tramo final en la nube, en paralelo
+        import hybrid
+
+        def local(audio):
+            ss, _ = model.transcribe(audio, vad_filter=True, **kw)
+            return [{"inicio": round(x.start, 1), "fin": round(x.end, 1), "texto": x.text.strip()} for x in ss]
+        segs, dur, det = hybrid.transcribe(media, pct, idioma, local, os.environ["VTK_DATA"])
+        on_progress(1)
+        return {"duracion_s": dur, "idioma": idioma, "voz_s": dur, "segmentos": segs, "hibrido": det}
     segs, info = model.transcribe(media, vad_filter=True, **kw)
     out = []
     for s in segs:
@@ -83,14 +92,16 @@ def main():
                 raise FileNotFoundError(f"no existe {fuente}")
         status(estado, fase="huella", progreso=0)
         digest = sha256(media)
-        cache = os.path.join(data, "cache", f"{digest}-{perfil}-{idioma}.json")
+        pct_tag = f"-n{os.environ.get('VTK_NUBE_PCT')}" if float(os.environ.get("VTK_NUBE_PCT") or 0) > 0 else ""
+        cache = os.path.join(data, "cache", f"{digest}-{perfil}-{idioma}{pct_tag}.json")
         if os.path.exists(cache):
             tx = json.load(open(cache))
             tx["desde_cache"] = True
         else:
             t1 = time.time()
             tx = transcribe(media, perfil, idioma, hilos,
-                            lambda p: status(estado, fase="transcribiendo", progreso=round(p, 3)))
+                            lambda p: status(estado, fase="transcribiendo", progreso=round(p, 3)),
+                            float(os.environ.get("VTK_NUBE_PCT") or 0))
             tx["segundos_transcripcion"] = round(time.time() - t1, 1)
             tx["rtf"] = round(tx["segundos_transcripcion"] / tx["duracion_s"], 3) if tx["duracion_s"] else None
             os.makedirs(os.path.dirname(cache), exist_ok=True)
@@ -113,7 +124,8 @@ def main():
         resumen = {"fase": "listo", "progreso": 1, "salida": salida, "archivo": nombre,
                    "duracion_s": tx["duracion_s"], "voz_s": tx["voz_s"], "rtf": tx.get("rtf"),
                    "desde_cache": tx.get("desde_cache", False), "segundos_total": round(time.time() - t0, 1),
-                   "perfil": perfil, "huella": digest, "candidatos": len(cands), "fotogramas": n_foto}
+                   "perfil": perfil, "huella": digest, "candidatos": len(cands), "fotogramas": n_foto,
+                   "hibrido": tx.get("hibrido")}
         status(estado, **resumen)
     except Exception as e:  # el estado lleva el error; nunca variables de entorno
         status(estado, fase="error", error=f"{type(e).__name__}: {e}")

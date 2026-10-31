@@ -85,6 +85,13 @@
       "description": "User Story, Product Backlog Item, Issue…",
       "default": "User Story",
       "sensitive": false
+    },
+    "GROQ_API_KEY": {
+      "type": "string",
+      "title": "Llave de Groq (opcional)",
+      "description": "Para el modo híbrido: una parte del audio se transcribe en Groq (activa Zero Data Retention en tu cuenta). Se guarda en el almacén seguro del sistema.",
+      "default": "",
+      "sensitive": true
     }
   }
 }

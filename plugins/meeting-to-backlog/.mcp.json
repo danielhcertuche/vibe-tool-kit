@@ -12,7 +12,8 @@
         "GRAPH_AUTH": "${user_config.GRAPH_AUTH}",
         "GRAPH_TENANT_ID": "${user_config.GRAPH_TENANT_ID}",
         "GRAPH_CLIENT_ID": "${user_config.GRAPH_CLIENT_ID}",
-        "GRAPH_CLIENT_SECRET": "${user_config.GRAPH_CLIENT_SECRET}"
+        "GRAPH_CLIENT_SECRET": "${user_config.GRAPH_CLIENT_SECRET}",
+        "GROQ_API_KEY": "${user_config.GROQ_API_KEY}"
       }
     }
   }

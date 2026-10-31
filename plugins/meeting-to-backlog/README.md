@@ -23,9 +23,21 @@ Requisitos: `python3` ≥ 3.10 en el PATH (si hay `uv`, la instalación es más 
   `fotogramas.md`, elegidos según la transcripción, las decisiones y las HU (siempre que haya video).
 - La transcripción se cachea por huella (SHA-256) del archivo para no repetir trabajo. Los fotogramas candidatos
   (decenas de JPEG pequeños, ~4 MB por hora) viven hasta que se eligen los 4 o 2 días; `limpiar_cache` borra todo.
-- Red: Hugging Face (modelo, primer uso), PyPI (dependencias, primer uso) y Microsoft Graph (solo si usas
-  enlaces). Al escribir el acta, el texto de la transcripción pasa por el asistente: úsalo solo si la política de
+- Red: Hugging Face (modelo, primer uso), PyPI (dependencias, primer uso), Microsoft Graph (solo si usas
+  enlaces) y Groq (solo en modo híbrido). Al escribir el acta, el texto de la transcripción pasa por el asistente: úsalo solo si la política de
   datos de tu organización lo permite.
+
+## Modo híbrido (opcional)
+
+`procesar_reunion` con `nube_pct` (0 a 0,5) manda el **tramo final** de la reunión a Groq mientras el resto se
+transcribe en local, al mismo tiempo. Pocos cortes y en silencios, porque cada corte pierde palabras.
+Estimado para 1 h: ~22 min solo local → ~15 min con 30 % en la nube (la RAM local no baja: el modelo se carga
+igual). Controles:
+- Solo si se pide para esa reunión y hay `GROQ_API_KEY`. Activa **Zero Data Retention** en tu cuenta de Groq.
+- Sale FLAC con nombre fijo, sin metadatos ni prompt; tope 50 %.
+- 429/5xx: reintenta respetando `retry-after`; si sigue fallando, ese tramo vuelve a local.
+- `registro_nube.jsonl` en `${CLAUDE_PLUGIN_DATA}` dice qué salió (huella, desplazamiento, código HTTP), nunca
+  audio ni texto.
 
 ## Configuración (`/plugin` → meeting-to-backlog → Configure)
 
@@ -37,6 +49,7 @@ Requisitos: `python3` ≥ 3.10 en el PATH (si hay `uv`, la instalación es más 
 | `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID` | Datos de la app de tu organización (no son secretos) |
 | `GRAPH_CLIENT_SECRET` | Solo modo `aplicacion`. Se guarda en el almacén seguro del sistema (Keychain en macOS; en Linux/WSL, `~/.claude/.credentials.json`, que debe tener permisos 600). Nunca lo pongas en un archivo del proyecto |
 | `AZDO_ORG`, `AZDO_PROJECT`, `AZDO_AREA`, `AZDO_TIPO` | Dónde crear las HU aprobadas; vacío = exportar CSV |
+| `GROQ_API_KEY` | Opcional, modo híbrido. Almacén seguro del sistema |
 
 **Modo `aplicacion`:** la credencial lee lo que su app tenga permitido en todo el tenant. Pide a tu administrador
 que la limite con `Sites.Selected` a los sitios donde se guardan las grabaciones, y entrégala por un canal seguro

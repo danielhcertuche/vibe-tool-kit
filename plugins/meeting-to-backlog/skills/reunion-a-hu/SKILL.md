@@ -18,10 +18,17 @@ escribes tú leyendo la transcripción. Nada se crea en Azure Boards sin que el 
   por la política de datos de su organización.
 - Carpeta de salida: dentro del proyecto actual, `docs/reuniones/AAAAMMDD_tema-corto/` (ruta absoluta).
 
+### Modo híbrido (opcional, más rápido)
+
+Si el usuario quiere más velocidad y configuró una llave de Groq, una parte del audio (`nube_pct`, p. ej. 0.3)
+se transcribe en la nube en paralelo con la local. **Pregunta explícitamente para cada reunión** y úsalo solo si
+el usuario confirma que la reunión no es confidencial ni tiene datos personales sensibles. Si no lo pide, no
+lo uses: por defecto todo es local.
+
 ## 2. Transcribir
 
 1. Llama `procesar_reunion` con `fuente`, `salida` y, si el usuario lo pide, `perfil` (`rapido` por defecto,
-   `preciso` para audio difícil) e `idioma`.
+   `preciso` para audio difícil), `idioma` y `nube_pct` (solo con la confirmación anterior).
 2. Llama `estado_reunion` cada 30–60 s. Informa la fase en una línea; no repitas el JSON.
    - `instalando`: primera vez, baja dependencias y modelo (unos minutos, una sola vez).
    - `login`: muestra al usuario el `mensaje` (enlace y código para iniciar sesión) tal cual.

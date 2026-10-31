@@ -33,7 +33,11 @@ TOOLS = [
          "salida": {"type": "string", "description": "Carpeta absoluta para los entregables (por defecto, una "
                                                      "carpeta del plugin)"},
          "perfil": {"type": "string", "enum": ["rapido", "preciso"]},
-         "idioma": {"type": "string", "description": "es, en, … o auto"}}}},
+         "idioma": {"type": "string", "description": "es, en, … o auto"},
+         "nube_pct": {"type": "number", "minimum": 0, "maximum": 0.5,
+                      "description": "Fracción del audio que se transcribe en la nube (Groq), en paralelo con lo "
+                                     "local. 0 = todo local (por defecto). Solo con autorización del usuario PARA "
+                                     "ESTA reunión y si su clasificación de datos lo permite."}}}},
     {"name": "estado_reunion",
      "description": "Estado de un job: fase (preparando, descargando, login, transcribiendo, listo, error), "
                     "progreso 0–1, y al terminar la ruta de transcripcion.md y métricas.",
@@ -76,7 +80,8 @@ def procesar(args):
     salida = args.get("salida") or os.path.join(DATA, "salidas", job)
     estado, log = _job_paths(job)
     env = dict(os.environ)
-    for k, v in (("VTK_PERFIL", args.get("perfil")), ("VTK_IDIOMA", args.get("idioma"))):
+    for k, v in (("VTK_PERFIL", args.get("perfil")), ("VTK_IDIOMA", args.get("idioma")),
+                 ("VTK_NUBE_PCT", str(args["nube_pct"]) if args.get("nube_pct") else None)):
         if v:
             env[k] = v
     with open(estado, "w") as f:
