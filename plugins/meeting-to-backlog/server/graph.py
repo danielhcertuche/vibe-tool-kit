@@ -18,6 +18,7 @@ import urllib.request
 GRAPH = "https://graph.microsoft.com/v1.0"
 LOGIN = "https://login.microsoftonline.com"
 DELEGATED_SCOPE = "offline_access Files.Read.All"
+UA = "meeting-to-backlog/0.1"
 
 
 class GraphError(RuntimeError):
@@ -27,7 +28,8 @@ class GraphError(RuntimeError):
 def _post(url, fields):
     data = urllib.parse.urlencode(fields).encode()
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, data=data), timeout=60) as r:
+        req = urllib.request.Request(url, data=data, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=60) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
         body = json.loads(e.read() or b"{}")
@@ -106,7 +108,7 @@ def token(notify=print):
 
 
 def _get(tok, path):
-    req = urllib.request.Request(GRAPH + path, headers={"Authorization": "Bearer " + tok})
+    req = urllib.request.Request(GRAPH + path, headers={"Authorization": "Bearer " + tok, "User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=120) as r:
             return json.load(r)
@@ -123,7 +125,7 @@ def download(url, dest_dir, notify=print):
     name = os.path.basename(item["name"]) or "grabacion.mp4"
     out = os.path.join(dest_dir, name)
     req = urllib.request.Request(f"{GRAPH}/drives/{drive}/items/{item['id']}/content",
-                                 headers={"Authorization": "Bearer " + tok})
+                                 headers={"Authorization": "Bearer " + tok, "User-Agent": UA})
     total = 0
     with urllib.request.urlopen(req, timeout=1800) as r, open(out, "wb") as f:
         while chunk := r.read(1 << 20):

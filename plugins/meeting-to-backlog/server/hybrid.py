@@ -82,7 +82,9 @@ def _post(data, idioma, key):
                  f"Content-Type: audio/flac\r\n\r\n".encode() + data + b"\r\n")
     parts.append(f"--{b}--\r\n".encode())
     req = urllib.request.Request(URL, data=b"".join(parts), headers={
-        "Authorization": "Bearer " + key, "Content-Type": "multipart/form-data; boundary=" + b})
+        "Authorization": "Bearer " + key, "Content-Type": "multipart/form-data; boundary=" + b,
+        # Cloudflare (delante de Groq) rechaza el agente por defecto de urllib con 403 / error 1010.
+        "User-Agent": "meeting-to-backlog/0.1"})
     with urllib.request.urlopen(req, timeout=300) as r:
         return json.load(r)
 
