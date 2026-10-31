@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // PreToolUse hook — guard MCP calls before they hang on dead servers
 
-const { execSync } = require('child_process');
+const net = require('net');
 
 let input = '';
 process.stdin.on('data', c => { input += c; });
@@ -28,21 +28,19 @@ process.stdin.on('end', () => {
   const port = MCP_PORTS[prefix];
   if (!Number.isInteger(port) || port < 1 || port > 65535) process.exit(0);
 
-  // Fast TCP check: ss -tnlp | grep :<port>
-  try {
-    execSync(`ss -tnlp 2>/dev/null | grep -q ':${port} '`, { timeout: 2000 });
-    // Port is open → server running → allow
-    process.exit(0);
-  } catch {
-    // Port not open — server likely down
+  // Chequeo TCP portable (Linux, macOS, Windows) y sin shell: si el puerto acepta
+  // conexión el servidor está arriba; si la rechaza o no responde en 1,5 s, se niega.
+  const deny = () => {
     const serverName = prefix.replace('mcp__', '');
-    const msg = JSON.stringify({ hookSpecificOutput: {
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       permissionDecision: 'deny',
-      permissionDecisionReason: `MCP server "${serverName}" not running (port ${port} closed). ` +
-              HINT
-    } });
-    process.stdout.write(msg);
+      permissionDecisionReason: `MCP server "${serverName}" not running (port ${port} closed). ` + HINT,
+    } }));
     process.exit(0);
-  }
+  };
+  const sock = net.connect({ host: '127.0.0.1', port, timeout: 1500 });
+  sock.once('connect', () => { sock.destroy(); process.exit(0); });
+  sock.once('timeout', () => { sock.destroy(); deny(); });
+  sock.once('error', deny);
 });

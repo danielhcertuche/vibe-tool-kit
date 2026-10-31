@@ -22,6 +22,12 @@ check "guard sin configuración no bloquea" empty "$out"
 out=$(echo "$IN" | CLAUDE_PLUGIN_OPTION_MCP_GUARD_PORTS='{"mcp__demo":65001}' node $G)
 check "guard niega con puerto cerrado" has "$out" '"permissionDecision":"deny"'
 
+python3 -m http.server 65002 --bind 127.0.0.1 >/dev/null 2>&1 & srv=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do (exec 3<>/dev/tcp/127.0.0.1/65002) 2>/dev/null && break; sleep 0.2; done
+out=$(echo "$IN" | CLAUDE_PLUGIN_OPTION_MCP_GUARD_PORTS='{"mcp__demo":65002}' node $G)
+kill "$srv" 2>/dev/null
+check "guard deja pasar con el puerto abierto" empty "$out"
+
 out=$(echo "$IN" | VIBE_MCP_GUARD_PORTS='{"mcp__demo":65001}' VIBE_MCP_GUARD_START_HINT='usa make up' node $G)
 check "guard lee VIBE_* (Codex) y la sugerencia" has "$out" 'usa make up'
 

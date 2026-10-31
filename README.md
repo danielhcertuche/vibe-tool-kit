@@ -42,7 +42,8 @@ Ningún plugin necesita configuración para funcionar. Los que la aceptan la dec
 
 ## Permisos y red
 
-- Ningún hook usa red. `mcp-guard` ejecuta `ss -tnlp` local para ver si un puerto escucha.
+- Ningún hook sale a internet. `mcp-guard` abre una conexión TCP a `127.0.0.1:<puerto>` (1,5 s
+  de timeout) para ver si el servidor escucha; no ejecuta comandos de shell.
 - `ui-review-hooks` solo lee el prompt y agrega contexto; nunca bloquea.
 - Los hooks viven en plugins aparte para que puedas no instalarlos: Claude Code no permite
   apagar un hook suelto dentro de un plugin.

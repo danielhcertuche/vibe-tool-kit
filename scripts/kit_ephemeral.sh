@@ -13,7 +13,8 @@
 #   - Sin red salvo las herramientas que la necesitan (NET=1 en TOOLS).
 #   - KIT_PURGE=1 borra además la imagen al final (libera también el disco).
 #   - Una línea de métricas por corrida en $KIT_METRICS (TSV): segundos, CPU
-#     consumida y % de la CPU asignada, pico de RAM (cgroup v2), exit y huérfanos.
+#     consumida y % de la CPU asignada, pico de RAM con caché y sin ella (cgroup v2),
+#     exit y huérfanos.
 set -euo pipefail
 
 SRC="${KIT_SRC:-$PWD}"
@@ -55,7 +56,7 @@ row=$(lookup "$tool"); [ -n "$row" ] || { echo "herramienta desconocida: $tool" 
 IFS='|' read -r _ image net entry <<<"$row"
 
 mkdir -p "$OUT"
-[ -s "$METRICS" ] || printf 'fecha\therramienta\tsegundos\tcpu_seg\tuso_cpu_pct\tpico_mib\texit\thuerfanos\tcpus\tmem\n' >"$METRICS"
+[ -s "$METRICS" ] || printf 'fecha\therramienta\tsegundos\tcpu_seg\tuso_cpu_pct\tpico_mib\tpico_anon_mib\texit\thuerfanos\tcpus\tmem\n' >"$METRICS"
 
 name="kit-$tool-$$-$RANDOM"
 stat_dir=$(mktemp -d)
@@ -83,7 +84,9 @@ docker create "${args[@]}" "$image" "$@" >/dev/null
 docker start "$name" >/dev/null
 # Pico de RAM y CPU consumida, leídos del cgroup v2 del contenedor cada 0,1 s.
 # memory.peak y cpu.stat son acumulados, así que la última lectura antes de que el
-# cgroup desaparezca es el valor final. Sin cgroup v2 (cgroupfs v1, Docker Desktop
+# cgroup desaparezca es el valor final. memory.peak incluye la caché de páginas de lo
+# que el proceso lee (recuperable, no causa OOM); pico_anon_mib es la memoria propia
+# del proceso: el máximo de `anon` en memory.stat. Sin cgroup v2 (cgroupfs v1, Docker Desktop
 # en macOS) las columnas salen con "-" en vez de un muestreo engañoso.
 id=$(docker inspect -f '{{.Id}}' "$name")
 cg=""
@@ -94,6 +97,8 @@ if [ -n "$cg" ]; then
   ( while [ -r "$cg/memory.peak" ]; do
       v=$(cat "$cg/memory.peak" 2>/dev/null) && [ -n "$v" ] && echo "$v" >"$stat_dir/peak"
       v=$(awk '/^usage_usec/{print $2}' "$cg/cpu.stat" 2>/dev/null) && [ -n "$v" ] && echo "$v" >"$stat_dir/cpu"
+      v=$(awk '/^anon /{print $2}' "$cg/memory.stat" 2>/dev/null)
+      [ -n "$v" ] && [ "$v" -gt "$(cat "$stat_dir/anon" 2>/dev/null || echo 0)" ] && echo "$v" >"$stat_dir/anon"
       sleep 0.1
     done ) &
   sampler=$!
@@ -107,12 +112,13 @@ end=$(date +%s.%N)
 docker rm -f "$name" >/dev/null 2>&1 || true
 orphans=$(docker ps -aq --filter "label=$LABEL" --filter "name=kit-$tool-$$" | wc -l)
 awk -v t0="$start" -v t1="$end" -v cpus="$CPUS" -v pk="$(cat "$stat_dir/peak" 2>/dev/null)" \
-    -v cu="$(cat "$stat_dir/cpu" 2>/dev/null)" -v d="$(date -Is)" -v tool="$tool" -v rc="$rc" \
+    -v cu="$(cat "$stat_dir/cpu" 2>/dev/null)" -v an="$(cat "$stat_dir/anon" 2>/dev/null)" -v d="$(date -Is)" -v tool="$tool" -v rc="$rc" \
     -v orph="$orphans" -v mem="$MEM" 'BEGIN{
   s = t1 - t0
   cs = (cu == "") ? "-" : sprintf("%.1f", cu / 1e6)
   pct = (cu == "" || s <= 0) ? "-" : sprintf("%.0f", 100 * cu / 1e6 / (s * cpus))
   pm = (pk == "") ? "-" : sprintf("%.0f", pk / 1048576)
-  printf "%s\t%s\t%.1f\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", d, tool, s, cs, pct, pm, rc, orph, cpus, mem
+  am = (an == "") ? "-" : sprintf("%.0f", an / 1048576)
+  printf "%s\t%s\t%.1f\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", d, tool, s, cs, pct, pm, am, rc, orph, cpus, mem
 }' >>"$METRICS"
 exit "$rc"
