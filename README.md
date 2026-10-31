@@ -15,6 +15,8 @@ marketplace de plugins. Cada plugin cubre un dominio y se instala por separado.
 
 ## Instalación
 
+> ¿Primera vez con plugins de Claude Code? Sigue la [guía paso a paso](docs/GUIA-INSTALACION.md).
+
 Claude Code:
 
 ```bash
@@ -31,7 +33,8 @@ Codex: los plugins traen `.codex-plugin/plugin.json` y el marketplace está tamb
 ## Parámetros
 
 Ningún plugin necesita configuración para funcionar. Los que la aceptan la declaran en
-`userConfig` (Claude Code los pregunta al instalar, o `claude plugin install --config`):
+`userConfig`: se fijan con `claude plugin install <p>@vibe-tool-kit --config KEY=valor`, con el menú
+`/plugin` → Configure, o con `claude plugin configure <p>@vibe-tool-kit --values-stdin`:
 
 | Plugin | KEY | Default | Efecto |
 |---|---|---|---|

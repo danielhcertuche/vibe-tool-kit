@@ -19,9 +19,15 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-      - run: |
-          npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-          node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs"
+      - name: "claude CLI (reintenta: el binario nativo opcional a veces no baja)"
+        run: |
+          for _ in 1 2 3; do
+            npm install -g --no-fund --no-audit "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" || true
+            node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" || true
+            claude --version && break
+            sleep 5
+          done
+          claude --version
       - run: scripts/validate_all.sh
       - run: tests/hooks/test_hooks.sh
 
@@ -45,18 +51,18 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
-      KIT_OUT: ${{ runner.temp }}/kit-out
       KIT_CPUS: "2"
       KIT_MEM: 3g
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - run: echo "KIT_OUT=$RUNNER_TEMP/kit-out" >> "$GITHUB_ENV"
       - run: scripts/kit_ephemeral.sh gitleaks git --redact --exit-code 1 /src
       - run: scripts/kit_ephemeral.sh trufflehog git file:///src --fail --no-update --results=verified,unknown
       - run: scripts/kit_ephemeral.sh semgrep semgrep scan --config p/default --error --metrics off /src
       - run: scripts/kit_ephemeral.sh bandit -r /src/plugins -ll
-      - run: scripts/kit_ephemeral.sh shellcheck -S warning $(git ls-files '*.sh')
+      - run: git ls-files -z '*.sh' | xargs -0 scripts/kit_ephemeral.sh shellcheck -S warning
       - run: scripts/kit_ephemeral.sh osv-scanner scan source --allow-no-lockfiles -r /src
       - run: scripts/kit_ephemeral.sh --verify-clean
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

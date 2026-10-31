@@ -18,9 +18,15 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-      - run: |
-          npm install -g "@anthropic-ai/claude-code@2.1.301"
-          node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs"
+      - name: "claude CLI (reintenta: el binario nativo opcional a veces no baja)"
+        run: |
+          for _ in 1 2 3; do
+            npm install -g --no-fund --no-audit "@anthropic-ai/claude-code@2.1.301" || true
+            node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" || true
+            claude --version && break
+            sleep 5
+          done
+          claude --version
       - env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PLUGIN: ${{ inputs.plugin }}

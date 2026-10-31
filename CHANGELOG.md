@@ -5,6 +5,7 @@ Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones s
 ## [0.1.0] — sin publicar
 
 ### Añadido
+- `docs/GUIA-INSTALACION.md`: guía paso a paso para usuarios no técnicos, validada por el smoke.
 - Plugins `agent-team`, `quality-gates`, `security-review`, `ui-review`, `ui-review-hooks`,
   `mcp-guard` y `diagrams`, con manifests para Claude Code y Codex.
 - `mcp-guard`: puertos y mensaje por `userConfig`; responde con `permissionDecision: deny`;
