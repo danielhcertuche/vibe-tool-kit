@@ -77,3 +77,20 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: tests/smoke/install.sh "2.1.301"
+
+  e2e-reuniones:
+    # Instalación desde cero (venv + modelo de 1,6 GB) con un clip público en español
+    # (MINDS-14, CC-BY-4.0). Corre aquí y no en máquinas de usuarios con poco disco.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: clip público de referencia
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          u = "https://datasets-server.huggingface.co/rows?dataset=PolyAI/minds14&config=es-ES&split=train&offset=0&length=1"
+          row = json.load(urllib.request.urlopen(u, timeout=60))["rows"][0]["row"]
+          open("/tmp/clip.wav", "wb").write(urllib.request.urlopen(row["audio"][0]["src"], timeout=60).read())
+          PY
+      - run: python3 tests/e2e/meeting_to_backlog.py /tmp/clip.wav --min-marcas 1 --timeout 1500

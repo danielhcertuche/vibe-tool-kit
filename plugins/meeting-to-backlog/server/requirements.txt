@@ -1,0 +1,3 @@
+# Solo lo necesario para transcribir: scipy e imageio-ffmpeg no hacen falta
+# (faster-whisper decodifica el audio del video con PyAV).
+faster-whisper==1.2.1
