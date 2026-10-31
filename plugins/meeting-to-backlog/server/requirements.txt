@@ -1,5 +1,6 @@
-# Árbol completo resuelto desde requirements.in (pip install --dry-run --report, Python 3.12, 2026-10-31).
-# Es lo que instala run_job.py: exactamente lo probado. Regenerar al cambiar requirements.in.
+# Árbol completo resuelto desde requirements.in para Python 3.11 y 3.12 (pip install --dry-run --report
+# --python-version 3.11 --only-binary=:all:, 2026-10-31). Es lo que instala run_job.py: exactamente lo probado.
+# Regenerar al cambiar requirements.in y comprobar que también resuelve con --python-version 3.12.
 anyio==4.15.1
 av==18.0.0
 certifi==2026.10.23
@@ -15,7 +16,7 @@ httpcore==1.0.9
 httpx==0.28.1
 huggingface_hub==1.26.0
 idna==3.20
-numpy==2.5.1
+numpy==2.4.6
 onnxruntime==1.28.0
 packaging==26.3
 pillow==13.0.0

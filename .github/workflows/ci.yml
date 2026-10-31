@@ -63,7 +63,7 @@ jobs:
           fetch-depth: 0
       - run: echo "KIT_OUT=$RUNNER_TEMP/kit-out" >> "$GITHUB_ENV"
       - run: scripts/kit_ephemeral.sh gitleaks git --redact --exit-code 1 /src
-      - run: scripts/kit_ephemeral.sh trufflehog git file:///src --fail --no-update --results=verified,unknown
+      - run: scripts/kit_ephemeral.sh trufflehog git file:///src --fail --no-update --results=verified,unknown --exclude-paths=/src/.trufflehog-exclude.txt
       - run: scripts/kit_ephemeral.sh semgrep semgrep scan --config p/default --error --metrics off /src
       - run: scripts/kit_ephemeral.sh bandit -r /src/plugins -ll
       - run: git ls-files -z '*.sh' | xargs -0 scripts/kit_ephemeral.sh shellcheck -S warning

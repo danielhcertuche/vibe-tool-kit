@@ -1,0 +1,3 @@
+# Rutas que trufflehog no escanea (regex sobre la ruta). Solo pruebas que contienen a propósito valores FALSOS
+# con forma de secreto para verificar que el plugin los oculta.
+^tests/unit/test_seguridad\.py$

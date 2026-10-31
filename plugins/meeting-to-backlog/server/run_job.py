@@ -42,16 +42,16 @@ if falta_venv:
     status(fase="instalando", progreso=0, mensaje="primera vez: instalando dependencias (~200 MB)")
     shutil.rmtree(VENV, ignore_errors=True)
     uv = shutil.which("uv")
-    try:
-        if uv:
-            subprocess.run([uv, "venv", "-q", "-p", sys.executable, VENV], check=True)
-            subprocess.run([uv, "pip", "install", "-q", "-p", py, "-r", REQ], check=True)
-        else:
-            subprocess.run([sys.executable, "-m", "venv", VENV], check=True)
-            subprocess.run([py, "-m", "pip", "install", "-q", "-r", REQ], check=True)
-    except subprocess.CalledProcessError as e:
-        status(fase="error", error=f"no se pudo instalar dependencias ({e.returncode}); ver el log del job")
-        raise SystemExit(1)
+    pasos = ([[uv, "venv", "-q", "-p", sys.executable, VENV], [uv, "pip", "install", "-q", "-p", py, "-r", REQ]]
+             if uv else [[sys.executable, "-m", "venv", VENV], [py, "-m", "pip", "install", "-q", "-r", REQ]])
+    for cmd in pasos:
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        sys.stderr.write(r.stdout + r.stderr)  # queda en el log del job
+        if r.returncode:
+            causa = next((l for l in reversed((r.stderr or r.stdout).splitlines()) if l.strip()), "sin detalle")
+            status(fase="error", error=seguridad.limpiar_secretos(
+                f"no se pudo instalar dependencias: {causa.strip()[:300]} (Python {sys.version.split()[0]})"))
+            raise SystemExit(1)
     open(stamp, "w").write(want)
 
 os.execv(py, [py, os.path.join(HERE, "worker.py"), fuente, salida, estado])

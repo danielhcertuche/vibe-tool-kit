@@ -97,6 +97,10 @@ def run_job(label):
         time.sleep(2)
     print(f"     {label}: fase={st['fase']} en {time.time() - t0:.1f}s rtf={st.get('rtf')} "
           f"cache={st.get('desde_cache')}" + (f" error={st.get('error')}" if st["fase"] == "error" else ""))
+    if st["fase"] == "error" and st.get("log") and os.path.exists(st["log"]):
+        print("     --- últimas líneas del log del job ---")
+        for line in open(st["log"], errors="ignore").read().splitlines()[-15:]:
+            print("     | " + line[:200])
     return st
 
 
