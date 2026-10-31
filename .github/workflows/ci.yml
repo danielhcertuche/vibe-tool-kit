@@ -31,6 +31,7 @@ jobs:
       - run: scripts/validate_all.sh
       - run: tests/hooks/test_hooks.sh
       - run: python3 tests/unit/test_cupo.py
+      - run: python3 tests/unit/test_postproceso.py
 
   denylist:
     runs-on: ubuntu-24.04

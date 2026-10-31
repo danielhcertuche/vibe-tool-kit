@@ -78,8 +78,8 @@ pct, motivo, _ = cupo.permitido(0.3, H1, r, presupuesto_mes_s=3600, ahora=AHORA)
 check(motivo == "presupuesto del mes" and abs(pct - 0.167) < 0.002, f"presupuesto del mes reduce a {pct}")
 
 # Reunión corta: menos de 30 s a la nube no vale la pena
-pct, _, _ = cupo.permitido(0.3, 60, vacio, ahora=AHORA)
-check(pct == 0.0, "reunión de 1 min: el 30 % son 18 s, va todo local")
+pct, motivo, _ = cupo.permitido(0.3, 60, vacio, ahora=AHORA)
+check(pct == 0.0 and motivo == "tramo menor a 30 s", f"reunión de 1 min: el 30 % son 18 s, va todo local ({motivo})")
 
 # Peticiones del día al límite
 r = registro([(3700 + i * 50, 1, 200) for i in range(1600)])  # repartidas en el día, fuera de la última hora

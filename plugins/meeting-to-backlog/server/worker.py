@@ -11,6 +11,7 @@ vuelve a transcribir. VTK_CONSERVAR=si deja también el medio descargado en la s
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 import time
@@ -41,6 +42,35 @@ def sha256(path):
 
 def hms(s):
     return f"{int(s // 3600):02d}:{int(s % 3600 // 60):02d}:{int(s % 60):02d}"
+
+
+def limpiar(segs, duracion):
+    """Quita la alucinación típica de Whisper al final (frases repetidas, marcas fuera del audio).
+
+    Medido en una reunión real de 18:45: 13 «muchas gracias» seguidos, con marcas hasta 19:01.
+    """
+    out, prev, reps = [], None, 0
+    for s in segs:
+        if duracion and s["inicio"] > duracion + 0.5:
+            continue
+        clave = re.sub(r"\W+", " ", s["texto"].lower()).strip()
+        reps = reps + 1 if clave == prev else 0
+        prev = clave
+        if reps < 2 and clave:  # como mucho dos repeticiones idénticas seguidas
+            out.append(s)
+    return out
+
+
+def agrupar(segs, hueco=1.5, max_chars=240):
+    """Une segmentos cortos y seguidos en líneas legibles (menos marcas, menos tokens para el acta)."""
+    out = []
+    for s in segs:
+        if out and s["inicio"] - out[-1]["fin"] <= hueco and len(out[-1]["texto"]) + len(s["texto"]) < max_chars \
+                and not out[-1]["texto"].endswith(("?", "!")):
+            out[-1] = {"inicio": out[-1]["inicio"], "fin": s["fin"], "texto": out[-1]["texto"] + " " + s["texto"]}
+        else:
+            out.append(dict(s))
+    return out
 
 
 def transcribe(media, perfil, idioma, hilos, on_progress, pct=0.0):
@@ -108,7 +138,8 @@ def main():
             json.dump(tx, open(cache, "w"), ensure_ascii=False)
         md = [f"# Transcripción — {nombre}", "",
               f"Duración {hms(tx['duracion_s'])} · idioma {tx['idioma']} · perfil {perfil}", ""]
-        md += [f"[{hms(s['inicio'])}] {s['texto']}" for s in tx["segmentos"]]
+        lineas = agrupar(limpiar(tx["segmentos"], tx["duracion_s"]))
+        md += [f"[{hms(s['inicio'])}] {s['texto']}" for s in lineas]
         open(os.path.join(salida, "transcripcion.md"), "w").write("\n".join(md) + "\n")
         # Fotogramas: candidatos guardados por huella (sobreviven al borrado del video) y 4 automáticos
         # en la salida, que la skill reemplaza por los elegidos según la transcripción.

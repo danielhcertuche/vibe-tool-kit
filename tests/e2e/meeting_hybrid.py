@@ -2,6 +2,9 @@
 
   python3 tests/e2e/meeting_hybrid.py <audio> [--venv-existente RUTA] [--pct 0.3]
 
+El audio debe durar al menos 2 min: con menos, el 30 % baja de 30 s y el control de cuota (cupo.py)
+manda todo a local a propósito.
+
 Casos: (1) nube responde 429 a la primera y luego bien: verifica porcentaje enviado, reintento, que el
 archivo sale como a.flac sin prompt, unión por tiempos y registro sin texto; (2) nube siempre falla: el
 tramo vuelve a local y la transcripción sale completa. En ambos, la llave canaria no aparece en archivos.

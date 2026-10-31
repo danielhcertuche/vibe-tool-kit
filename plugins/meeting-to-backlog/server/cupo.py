@@ -66,6 +66,6 @@ def permitido(pct_pedido, duracion_s, registro, bloques=1, presupuesto_mes_s=0, 
     motivo, pct = min(cand.items(), key=lambda kv: kv[1])
     pct = max(0.0, round(pct, 3))
     # Un tramo que se cobra como mínimo 10 s no vale la pena por debajo de 30 s de audio.
-    if pct * duracion_s < 30:
-        pct = 0.0
+    if 0 < pct and pct * duracion_s < 30:
+        pct, motivo = 0.0, "tramo menor a 30 s"
     return pct, motivo, u
