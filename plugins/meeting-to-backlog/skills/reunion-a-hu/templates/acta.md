@@ -15,6 +15,11 @@
 |---|---|---|---|---|
 | {acción} | {nombre o "por definir"} | {fecha o "por definir"} | `[hh:mm:ss]` | {#n o —} |
 
+## Fotogramas clave
+| Momento | Fotograma | Qué muestra | Respalda |
+|---|---|---|---|
+| `[hh:mm:ss]` | ![](fotogramas/f1_hhmmss.jpg) | {qué se ve} | {decisión o HU} |
+
 ## Riesgos y bloqueos
 - {riesgo} `[hh:mm:ss]`
 

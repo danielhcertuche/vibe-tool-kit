@@ -46,7 +46,21 @@ Por cada pendiente que sea trabajo de producto o de sistema (no tareas administr
   y escribe qué falta.
 - No juntes dos pendientes en una HU ni partas uno en varias sin decirlo.
 
-## 5. Crear en Azure Boards (solo con aprobación)
+## 5. Los 4 fotogramas clave (obligatorio si la grabación tiene video)
+
+El job ya dejó 4 fotogramas automáticos en `fotogramas/`. Reemplázalos por los que mejor sustentan la reunión:
+1. Arma de 4 a 8 marcas `[hh:mm:ss]`: el momento donde se planteó el objetivo, las decisiones principales y la
+   evidencia de las HU con confianza alta.
+2. Llama `fotogramas_candidatos` con esas marcas y **mira cada imagen** devuelta.
+3. Elige 4 que muestren algo que el texto no dice (pantalla compartida, diagrama, dato, demo), sin repetir lo
+   mismo. Descarta caras sin contexto y pantallas de transición.
+4. Llama `conservar_fotogramas` con los 4, cada uno con `motivo` (qué se ve y por qué importa) y `relacion`
+   (la decisión o la HU, p. ej. `HU 2` o `Decisión: …`). Esto escribe `fotogramas.md` y borra el resto.
+5. En `acta.md`, enlaza cada fotograma junto a la decisión o pendiente que respalda.
+
+Si la herramienta dice que no hay candidatos, la grabación era solo audio: dilo en el acta.
+
+## 6. Crear en Azure Boards (solo con aprobación)
 
 Pide al usuario que apruebe, edite o descarte **cada** HU. Con las aprobadas:
 - Si hay organización configurada (${user_config.AZDO_ORG}, proyecto ${user_config.AZDO_PROJECT}), crea cada una
@@ -55,7 +69,7 @@ Pide al usuario que apruebe, edite o descarte **cada** HU. Con las aprobadas:
 - Si no hay organización configurada o `az` no tiene sesión, escribe `hu.csv` (Title, Description,
   Acceptance Criteria) para importarlo en Boards y dile cómo.
 
-## 6. Cierre
+## 7. Cierre
 
-- Resume: duración, perfil, tiempo de transcripción, HU creadas y sus ids.
+- Resume: duración, perfil, tiempo de transcripción, fotogramas conservados, HU creadas y sus ids.
 - Si el usuario no necesita la transcripción completa, ofrece borrarla y llamar `limpiar_cache`.

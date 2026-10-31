@@ -99,12 +99,21 @@ def main():
               f"Duración {hms(tx['duracion_s'])} · idioma {tx['idioma']} · perfil {perfil}", ""]
         md += [f"[{hms(s['inicio'])}] {s['texto']}" for s in tx["segmentos"]]
         open(os.path.join(salida, "transcripcion.md"), "w").write("\n".join(md) + "\n")
+        # Fotogramas: candidatos guardados por huella (sobreviven al borrado del video) y 4 automáticos
+        # en la salida, que la skill reemplaza por los elegidos según la transcripción.
+        status(estado, fase="fotogramas", progreso=1)
+        sys.path.insert(0, os.path.dirname(__file__))
+        import frames
+        cand_dir = os.path.join(data, "candidatos", digest)
+        cands = frames.extraer_candidatos(media, cand_dir)
+        n_foto = frames.publicar(frames.seleccion_auto(cands, tx["duracion_s"]), cand_dir, salida,
+                                 "selección automática") if cands else 0
         if os.environ.get("VTK_CONSERVAR") == "si" and media.startswith(tmp):
             shutil.move(media, os.path.join(salida, nombre))
         resumen = {"fase": "listo", "progreso": 1, "salida": salida, "archivo": nombre,
                    "duracion_s": tx["duracion_s"], "voz_s": tx["voz_s"], "rtf": tx.get("rtf"),
                    "desde_cache": tx.get("desde_cache", False), "segundos_total": round(time.time() - t0, 1),
-                   "perfil": perfil}
+                   "perfil": perfil, "huella": digest, "candidatos": len(cands), "fotogramas": n_foto}
         status(estado, **resumen)
     except Exception as e:  # el estado lleva el error; nunca variables de entorno
         status(estado, fase="error", error=f"{type(e).__name__}: {e}")

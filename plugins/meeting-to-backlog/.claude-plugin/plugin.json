@@ -1,7 +1,7 @@
 {
   "name": "meeting-to-backlog",
   "version": "0.1.0",
-  "description": "Grabaciones de reunión → transcripción local → acta con decisiones y pendientes → borradores de HU para Azure Boards, con aprobación humana. Sin licencias premium.",
+  "description": "Grabaciones de reunión → transcripción local → acta con decisiones y pendientes → 4 fotogramas clave → borradores de HU para Azure Boards, con aprobación humana. Sin licencias premium.",
   "author": {
     "name": "danielhcertuche"
   },

@@ -67,8 +67,9 @@ def check(cond, msg):
 
 
 def run_job(label):
+    global st2_job
     t0 = time.time()
-    job = tool("procesar_reunion", fuente=os.path.abspath(a.audio), salida=salida)["job"]
+    job = st2_job = tool("procesar_reunion", fuente=os.path.abspath(a.audio), salida=salida)["job"]
     while time.time() - t0 < a.timeout:
         st = tool("estado_reunion", job=job)
         if st["fase"] in ("listo", "error"):
@@ -83,7 +84,8 @@ try:
     init = call("initialize", {"protocolVersion": "2025-06-18"})["result"]
     check(init["serverInfo"]["name"] == "meeting-to-backlog", "initialize")
     check({t["name"] for t in call("tools/list")["result"]["tools"]} ==
-          {"procesar_reunion", "estado_reunion", "limpiar_cache"}, "tools/list")
+          {"procesar_reunion", "estado_reunion", "fotogramas_candidatos", "conservar_fotogramas",
+           "limpiar_cache"}, "tools/list")
     st = run_job("primera corrida")
     check(st["fase"] == "listo", "job termina en listo")
     md = os.path.join(salida, "transcripcion.md")
@@ -105,6 +107,28 @@ try:
             except OSError:
                 pass
     check(not filtrado, f"el secreto no aparece en archivos del plugin ({len(filtrado)} con canario)")
+
+    if st.get("candidatos"):  # la fuente tiene video: los 4 fotogramas son obligatorios
+        fdir = os.path.join(salida, "fotogramas")
+        auto = sorted(os.listdir(fdir)) if os.path.isdir(fdir) else []
+        check(len(auto) == min(4, st["candidatos"]), f"4 fotogramas automáticos ({len(auto)} de "
+                                                     f"{st['candidatos']} candidatos)")
+        cand = json.loads(json.dumps(tool("fotogramas_candidatos", job=st2_job, marcas=["00:00:05", "00:00:40"],
+                                          por_marca=2)))
+        check(len(cand["candidatos"]) >= 2, f"candidatos cerca de las marcas ({len(cand['candidatos'])})")
+        r = call("tools/call", {"name": "conservar_fotogramas", "arguments": {
+            "job": st2_job, "elegidos": [{"archivo": "/etc/passwd", "motivo": "x"}]}})["result"]
+        check(r.get("isError"), "rechaza una ruta que no es candidata")
+        elegidos = [{"archivo": c["archivo"], "motivo": f"prueba {i}", "relacion": "HU 1"}
+                    for i, c in enumerate(cand["candidatos"][:4], 1)]
+        res = tool("conservar_fotogramas", job=st2_job, elegidos=elegidos)
+        final = sorted(os.listdir(fdir))
+        md = open(os.path.join(salida, "fotogramas.md")).read()
+        check(len(final) == len(elegidos) and "elegidos según la transcripción" in md and "HU 1" in md,
+              f"conserva los elegidos con motivo ({res['conservados']})")
+        check(not os.path.isdir(os.path.join(data, "candidatos", st["huella"])), "borra el resto de candidatos")
+        tam = sum(os.path.getsize(os.path.join(fdir, f)) for f in final)
+        print(f"     fotogramas entregados: {len(final)}, {tam / 1024:.0f} KB")
     lib = tool("limpiar_cache")
     check(lib["archivos_borrados"] > 0 and not os.path.exists(os.path.join(data, "cache")),
           f"limpiar_cache borra la caché ({lib['archivos_borrados']} archivos, {lib['liberado_kb']} KB)")

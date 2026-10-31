@@ -1,6 +1,7 @@
 # meeting-to-backlog
 
-Grabación de reunión → transcripción **en tu máquina** → acta con decisiones y pendientes → borradores de HU
+Grabación de reunión → transcripción **en tu máquina** → acta con decisiones y pendientes → 4 fotogramas clave →
+borradores de HU
 → Azure Boards **solo con tu aprobación**. No necesita licencias de Teams Premium ni de Copilot.
 
 Uso: `/acta /ruta/absoluta/reunion.mp4` o pídele a Claude "saca el acta y las HU de esta reunión".
@@ -9,7 +10,7 @@ Uso: `/acta /ruta/absoluta/reunion.mp4` o pídele a Claude "saca el acta y las H
 
 | Recurso | Cuándo | Tamaño |
 |---|---|---|
-| Entorno de Python (faster-whisper) en `${CLAUDE_PLUGIN_DATA}/venv` | primer uso | ~200 MB |
+| Entorno de Python (faster-whisper, Pillow) en `${CLAUDE_PLUGIN_DATA}/venv` | primer uso | ~215 MB |
 | Modelo `large-v3-turbo` (CTranslate2, int8) | primer uso | ~1,6 GB |
 | CPU y RAM | solo mientras transcribe | ver `docs/` del repo |
 
@@ -18,8 +19,10 @@ Requisitos: `python3` ≥ 3.10 en el PATH (si hay `uv`, la instalación es más 
 ## Datos y red
 
 - La grabación descargada y todo intermedio viven en una carpeta temporal que se borra al terminar, también si
-  falla. El audio se decodifica en memoria. Queda solo lo que pides: `transcripcion.md`, `acta.md`, `hu.json`.
-- La transcripción se cachea por huella (SHA-256) del archivo para no repetir trabajo; `limpiar_cache` la borra.
+  falla. El audio se decodifica en memoria. Queda solo lo que sirve: `transcripcion.md`, `acta.md`, `hu.json` y **4 fotogramas clave** con
+  `fotogramas.md`, elegidos según la transcripción, las decisiones y las HU (siempre que haya video).
+- La transcripción se cachea por huella (SHA-256) del archivo para no repetir trabajo. Los fotogramas candidatos
+  (decenas de JPEG pequeños, ~4 MB por hora) viven hasta que se eligen los 4 o 2 días; `limpiar_cache` borra todo.
 - Red: Hugging Face (modelo, primer uso), PyPI (dependencias, primer uso) y Microsoft Graph (solo si usas
   enlaces). Al escribir el acta, el texto de la transcripción pasa por el asistente: úsalo solo si la política de
   datos de tu organización lo permite.
