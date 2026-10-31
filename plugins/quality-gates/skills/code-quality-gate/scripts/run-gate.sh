@@ -109,7 +109,7 @@ fi
 
 # If no languages detected, emit a no-op result
 if [ ${#RESULTS[@]} -eq 0 ]; then
-  echo '{"gate":"code-quality-gate","status":"pass","checks":[],"timestamp":"'$(date -u +%FT%TZ)'"}'
+  echo '{"gate":"code-quality-gate","status":"pass","checks":[],"timestamp":"'"$(date -u +%FT%TZ)"'"}'
   exit 0
 fi
 

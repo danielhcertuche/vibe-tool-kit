@@ -36,6 +36,14 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+
+def _parse_untrusted(path):
+    """XML de un .drawio ajeno. Sin DOCTYPE no hay entidades que expandir (billion laughs, XXE)."""
+    data = Path(path).read_bytes()
+    if b"<!doctype" in data.lower() or b"<!entity" in data.lower():
+        raise SystemExit(f"{path}: rechazado, trae DOCTYPE/ENTITY")
+    return ET.ElementTree(ET.fromstring(data))  # nosec B314 - DOCTYPE/ENTITY rechazados arriba
+
 TYPE_RX = re.compile(r"^(.*?)\s*:\s*(.+)$")
 
 
@@ -195,7 +203,7 @@ def main() -> int:
                     help="agrupa por el primer token del nombre (heurística, revisar a mano)")
     a = ap.parse_args()
 
-    tree = ET.parse(a.input)
+    tree = _parse_untrusted(a.input)
     cells = {c.get("id"): c for c in tree.iter("mxCell") if c.get("id")}
     tables: list[tuple[str, list[dict]]] = []
     seen: set[str] = set()

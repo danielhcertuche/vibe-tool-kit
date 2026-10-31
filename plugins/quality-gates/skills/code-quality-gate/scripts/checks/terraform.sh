@@ -43,7 +43,7 @@ sys.exit(0 if data.get('valid') else 1)
     FINDINGS+=("terraform-validate: errors in $(basename "$tf_dir")")
     STATUS="fail"
   fi
-done < <(find "$SCAN_PATH" -name "*.tf" -not -path "*/.git/*" 2>/dev/null | xargs -I{} dirname {} | sort -u)
+done < <(find "$SCAN_PATH" -name "*.tf" -not -path "*/.git/*" -exec dirname {} \; 2>/dev/null | sort -u)
 
 if [ "$STATUS" = "pass" ]; then echo "[terraform] validate: pass" >&2; fi
 

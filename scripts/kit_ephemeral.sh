@@ -12,8 +12,8 @@
 #   - El código se monta en /src en solo lectura; solo /out es escribible.
 #   - Sin red salvo las herramientas que la necesitan (NET=1 en TOOLS).
 #   - KIT_PURGE=1 borra además la imagen al final (libera también el disco).
-#   - Una línea de métricas por corrida en $KIT_METRICS (TSV): herramienta,
-#     segundos, pico de RAM en MiB, código de salida, contenedores huérfanos.
+#   - Una línea de métricas por corrida en $KIT_METRICS (TSV): segundos, CPU
+#     consumida y % de la CPU asignada, pico de RAM (cgroup v2), exit y huérfanos.
 set -euo pipefail
 
 SRC="${KIT_SRC:-$PWD}"
@@ -55,11 +55,10 @@ row=$(lookup "$tool"); [ -n "$row" ] || { echo "herramienta desconocida: $tool" 
 IFS='|' read -r _ image net entry <<<"$row"
 
 mkdir -p "$OUT"
-[ -s "$METRICS" ] || printf 'fecha\therramienta\tsegundos\tpico_mib\texit\thuerfanos\tcpus\tmem\n' >"$METRICS"
+[ -s "$METRICS" ] || printf 'fecha\therramienta\tsegundos\tcpu_seg\tuso_cpu_pct\tpico_mib\texit\thuerfanos\tcpus\tmem\n' >"$METRICS"
 
 name="kit-$tool-$$-$RANDOM"
-peak_file=$(mktemp)
-echo 0 >"$peak_file"
+stat_dir=$(mktemp -d)
 sampler=""
 
 # shellcheck disable=SC2329  # se invoca desde trap
@@ -67,7 +66,7 @@ cleanup() {
   [ -n "$sampler" ] && kill "$sampler" 2>/dev/null || true
   docker rm -f "$name" >/dev/null 2>&1 || true
   [ "${KIT_PURGE:-0}" = 1 ] && docker rmi "$image" >/dev/null 2>&1 || true
-  rm -f "$peak_file"
+  rm -rf "$stat_dir"
 }
 trap cleanup EXIT INT TERM
 
@@ -82,23 +81,38 @@ for m in ${KIT_EXTRA_RO:-}; do args+=(-v "$m:$m:ro"); done
 start=$(date +%s.%N)
 docker create "${args[@]}" "$image" "$@" >/dev/null
 docker start "$name" >/dev/null
-# Muestrea la RAM del contenedor cada 0,5 s y guarda el pico.
-( while docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null | grep -q true; do
-    m=$(docker stats --no-stream --format '{{.MemUsage}}' "$name" 2>/dev/null | awk '{print $1}')
-    mib=$(awk -v m="$m" 'BEGIN{v=m+0; if(m~/GiB/)v*=1024; else if(m~/KiB/)v/=1024; else if(m~/[0-9]B$/ && m!~/[KMG]iB/)v/=1048576; printf "%.0f", v}')
-    [ "${mib:-0}" -gt "$(cat "$peak_file")" ] && echo "$mib" >"$peak_file"
-    sleep 0.5
-  done ) &
-sampler=$!
+# Pico de RAM y CPU consumida, leídos del cgroup v2 del contenedor cada 0,1 s.
+# memory.peak y cpu.stat son acumulados, así que la última lectura antes de que el
+# cgroup desaparezca es el valor final. Sin cgroup v2 (cgroupfs v1, Docker Desktop
+# en macOS) las columnas salen con "-" en vez de un muestreo engañoso.
+id=$(docker inspect -f '{{.Id}}' "$name")
+cg=""
+for p in "/sys/fs/cgroup/system.slice/docker-$id.scope" "/sys/fs/cgroup/docker/$id"; do
+  [ -r "$p/memory.peak" ] && cg=$p
+done
+if [ -n "$cg" ]; then
+  ( while [ -r "$cg/memory.peak" ]; do
+      v=$(cat "$cg/memory.peak" 2>/dev/null) && [ -n "$v" ] && echo "$v" >"$stat_dir/peak"
+      v=$(awk '/^usage_usec/{print $2}' "$cg/cpu.stat" 2>/dev/null) && [ -n "$v" ] && echo "$v" >"$stat_dir/cpu"
+      sleep 0.1
+    done ) &
+  sampler=$!
+fi
 docker logs -f "$name" &
 logs=$!
 rc=$(docker wait "$name")
 wait "$logs" 2>/dev/null || true
 end=$(date +%s.%N)
-kill "$sampler" 2>/dev/null || true; sampler=""
-peak=$(cat "$peak_file")
+[ -n "$sampler" ] && { kill "$sampler" 2>/dev/null || true; sampler=""; }
 docker rm -f "$name" >/dev/null 2>&1 || true
 orphans=$(docker ps -aq --filter "label=$LABEL" --filter "name=kit-$tool-$$" | wc -l)
-printf '%s\t%s\t%.1f\t%s\t%s\t%s\t%s\t%s\n' "$(date -Is)" "$tool" "$(echo "$end - $start" | bc)" \
-  "$peak" "$rc" "$orphans" "$CPUS" "$MEM" >>"$METRICS"
+awk -v t0="$start" -v t1="$end" -v cpus="$CPUS" -v pk="$(cat "$stat_dir/peak" 2>/dev/null)" \
+    -v cu="$(cat "$stat_dir/cpu" 2>/dev/null)" -v d="$(date -Is)" -v tool="$tool" -v rc="$rc" \
+    -v orph="$orphans" -v mem="$MEM" 'BEGIN{
+  s = t1 - t0
+  cs = (cu == "") ? "-" : sprintf("%.1f", cu / 1e6)
+  pct = (cu == "" || s <= 0) ? "-" : sprintf("%.0f", 100 * cu / 1e6 / (s * cpus))
+  pm = (pk == "") ? "-" : sprintf("%.0f", pk / 1048576)
+  printf "%s\t%s\t%.1f\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", d, tool, s, cs, pct, pm, rc, orph, cpus, mem
+}' >>"$METRICS"
 exit "$rc"

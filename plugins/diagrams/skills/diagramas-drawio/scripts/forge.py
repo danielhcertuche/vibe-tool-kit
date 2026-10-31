@@ -40,6 +40,14 @@ import unicodedata
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
+
+
+def _parse_untrusted(path):
+    """XML de un .drawio ajeno. Sin DOCTYPE no hay entidades que expandir (billion laughs, XXE)."""
+    data = Path(path).read_bytes()
+    if b"<!doctype" in data.lower() or b"<!entity" in data.lower():
+        raise SystemExit(f"{path}: rechazado, trae DOCTYPE/ENTITY")
+    return ET.ElementTree(ET.fromstring(data))  # nosec B314 - DOCTYPE/ENTITY rechazados arriba
 from typing import Any, Iterable
 from xml.sax.saxutils import escape as xml_escape
 
@@ -2042,7 +2050,7 @@ def check_drawio_xml(xml: str) -> list[dict[str, str]]:
         out.append({"sev": sev, "code": code, "msg": msg})
 
     try:
-        root = ET.fromstring(xml)
+        root = ET.fromstring(xml)  # nosec B314 - XML generado por este mismo script
     except ET.ParseError as exc:
         add("XML-PARSE", f"XML mal formado: {exc}")
         return out
@@ -2088,7 +2096,7 @@ def check_drawio_xml(xml: str) -> list[dict[str, str]]:
 # ---------------------------------------------------------------------------
 
 def inspect_drawio(path: Path) -> int:
-    tree = ET.parse(path)
+    tree = _parse_untrusted(path)
     cells = {c.get("id"): c for c in tree.iter("mxCell")}
     tables, rows_of = {}, {}
     for cid, c in cells.items():
