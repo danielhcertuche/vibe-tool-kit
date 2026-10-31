@@ -1,0 +1,12 @@
+# Dependencias directas (fuente de requirements.txt). Versiones fijadas: son con las que corrieron todas las pruebas (2026-10-31). Una instalación limpia sin
+# fijar trajo av 19, que rompe faster-whisper 1.2.1. Dependabot avisa de actualizaciones y vulnerabilidades.
+# scipy e imageio-ffmpeg no hacen falta: faster-whisper decodifica el audio del video con PyAV.
+faster-whisper==1.2.1
+ctranslate2==4.8.1
+av==18.0.0
+onnxruntime==1.28.0
+tokenizers==0.23.1
+huggingface-hub==1.26.0
+numpy==2.5.1
+# Pillow: escribir los fotogramas en JPEG y deduplicarlos (dHash). 13.0.0 corrige 23 CVE de la 12.x.
+Pillow==13.0.0
