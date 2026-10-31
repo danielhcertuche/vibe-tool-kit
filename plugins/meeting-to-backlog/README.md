@@ -14,7 +14,7 @@ Uso: `/acta /ruta/absoluta/reunion.mp4` o pídele a Claude "saca el acta y las H
 | Modelo `large-v3-turbo` (CTranslate2, int8) | primer uso | ~1,6 GB |
 | CPU y RAM | solo mientras transcribe | ver `docs/` del repo |
 
-Requisitos: `python3` ≥ 3.10 en el PATH (si hay `uv`, la instalación es más rápida). No usa GPU ni ffmpeg.
+Requisitos: `python3` ≥ 3.11 en el PATH (si hay `uv`, la instalación es más rápida). No usa GPU ni ffmpeg.
 
 ## Datos y red
 

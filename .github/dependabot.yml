@@ -6,3 +6,9 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+  - package-ecosystem: pip
+    directory: /plugins/meeting-to-backlog/server
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
