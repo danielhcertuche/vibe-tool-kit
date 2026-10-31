@@ -92,6 +92,13 @@
       "description": "Para el modo híbrido: una parte del audio se transcribe en Groq (activa Zero Data Retention en tu cuenta). Se guarda en el almacén seguro del sistema.",
       "default": "",
       "sensitive": true
+    },
+    "NUBE_MES_MIN": {
+      "type": "string",
+      "title": "Presupuesto mensual de nube (minutos)",
+      "description": "Opcional. Minutos de audio al mes que pueden ir a Groq además de sus límites por hora y día; vacío = solo los límites gratuitos de Groq (con 20 % de margen).",
+      "default": "",
+      "sensitive": false
     }
   }
 }

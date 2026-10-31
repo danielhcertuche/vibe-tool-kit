@@ -4,7 +4,8 @@ Medido (docs del kit): trocear en local no acelera (la CPU ya está al tope) y c
 porque el modelo arranca sin contexto. Por eso hay pocos cortes: el local se lleva un bloque continuo
 (1 - pct) y la nube el tramo final en bloques de hasta BLOQUE_MAX s, todos cortados en silencios.
 
-Controles: solo con pct > 0 pedido para esta reunión y con llave configurada; el audio sale como FLAC
+Controles: solo con pct > 0 pedido para esta reunión y con llave configurada; nunca más del 30 % ni de
+lo que deja la cuota gratuita (cupo.py); el audio sale como FLAC
 en memoria con nombre fijo, sin metadatos ni prompt; tope de proporción; ante 429 respeta retry-after y
 tras 2 fallos el bloque vuelve a local; registro local (huella, proveedor, desplazamiento, código HTTP),
 nunca audio ni texto.
@@ -21,7 +22,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 SR = 16000
 BLOQUE_MAX = 600          # 10 min de FLAC 16 kHz mono ≈ 12–20 MB, bajo el tope de 25 MB de Groq
-PCT_MAX = float(os.environ.get("VTK_NUBE_PCT_MAX", "0.5"))
 URL = os.environ.get("VTK_NUBE_URL", "https://api.groq.com/openai/v1/audio/transcriptions")
 MODELO = os.environ.get("VTK_NUBE_MODELO", "whisper-large-v3-turbo")
 
@@ -40,7 +40,6 @@ def _corte(sil, objetivo):
 def plan(audio, pct):
     """[(inicio, fin, 'local'|'nube')] en muestras. Un bloque local y bloques de nube ≤ BLOQUE_MAX."""
     n = len(audio)
-    pct = max(0.0, min(pct, PCT_MAX))
     if pct <= 0:
         return [(0, n, "local")]
     sil = _silencios(audio)
@@ -122,10 +121,17 @@ def transcribe(media, pct, idioma, transcribir_local, data_dir):
     """Devuelve (segmentos, duracion_s, detalle). transcribir_local(audio_np) -> segmentos con tiempos relativos."""
     from faster_whisper.audio import decode_audio
 
+    import cupo
+
     key = os.environ.get("GROQ_API_KEY", "").strip()
     audio = decode_audio(media, sampling_rate=SR)
-    bloques = plan(audio, pct if key else 0)
     registro = os.path.join(data_dir, "registro_nube.jsonl")
+    dur = len(audio) / SR
+    # Nunca más del 30 % ni más de lo que deja la cuota gratuita (hora, día, presupuesto del mes).
+    mes_s = float(os.environ.get("VTK_NUBE_MES_MIN") or 0) * 60
+    n_bloques = max(1, int(pct * dur // BLOQUE_MAX) + 1)
+    pct_ef, limitado_por, uso = cupo.permitido(pct, dur, registro, n_bloques, mes_s) if key else (0.0, "sin llave", {})
+    bloques = plan(audio, pct_ef)
     segs, devueltos = [], []
     nube = [(i, f) for i, f, d in bloques if d == "nube"]
     with ThreadPoolExecutor(max_workers=2) as ex:
@@ -144,5 +150,6 @@ def transcribe(media, pct, idioma, transcribir_local, data_dir):
     segs.sort(key=lambda s: s["inicio"])
     enviado = sum(f - i for i, f in nube) / len(audio) if len(audio) else 0
     return segs, round(len(audio) / SR, 1), {
-        "bloques": len(bloques), "pct_pedido": pct, "pct_enviado": round(enviado, 3),
+        "bloques": len(bloques), "pct_pedido": pct, "pct_permitido": pct_ef, "limitado_por": limitado_por,
+        "uso_previo": uso, "pct_enviado": round(enviado, 3),
         "bloques_nube": len(nube), "devueltos_a_local": len(devueltos), "llave": bool(key)}

@@ -34,9 +34,10 @@ TOOLS = [
                                                      "carpeta del plugin)"},
          "perfil": {"type": "string", "enum": ["rapido", "preciso"]},
          "idioma": {"type": "string", "description": "es, en, … o auto"},
-         "nube_pct": {"type": "number", "minimum": 0, "maximum": 0.5,
+         "nube_pct": {"type": "number", "minimum": 0, "maximum": 0.3,
                       "description": "Fracción del audio que se transcribe en la nube (Groq), en paralelo con lo "
-                                     "local. 0 = todo local (por defecto). Solo con autorización del usuario PARA "
+                                     "local. 0 = todo local (por defecto); tope 0.3 y lo que deje la cuota gratuita. Solo con autorización "
+                                     "del usuario PARA "
                                      "ESTA reunión y si su clasificación de datos lo permite."}}}},
     {"name": "estado_reunion",
      "description": "Estado de un job: fase (preparando, descargando, login, transcribiendo, listo, error), "

@@ -13,7 +13,8 @@
         "GRAPH_TENANT_ID": "${user_config.GRAPH_TENANT_ID}",
         "GRAPH_CLIENT_ID": "${user_config.GRAPH_CLIENT_ID}",
         "GRAPH_CLIENT_SECRET": "${user_config.GRAPH_CLIENT_SECRET}",
-        "GROQ_API_KEY": "${user_config.GROQ_API_KEY}"
+        "GROQ_API_KEY": "${user_config.GROQ_API_KEY}",
+        "VTK_NUBE_MES_MIN": "${user_config.NUBE_MES_MIN}"
       }
     }
   }
