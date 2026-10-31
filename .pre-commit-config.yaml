@@ -1,0 +1,13 @@
+# pip install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: denylist
+        name: denylist (rutas personales, correos, endpoints, tokens)
+        entry: scripts/check_denylist.sh .
+        language: system
+        pass_filenames: false

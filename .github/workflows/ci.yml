@@ -33,6 +33,7 @@ jobs:
       - run: python3 tests/unit/test_cupo.py
       - run: python3 tests/unit/test_postproceso.py
       - run: python3 tests/unit/test_red.py
+      - run: python3 tests/unit/test_seguridad.py
 
   denylist:
     runs-on: ubuntu-24.04
@@ -107,3 +108,12 @@ jobs:
             -map "[v]" -map 4:a -c:v libx264 -g 20 -pix_fmt yuv420p -c:a aac -shortest /tmp/reunion.mp4
       - run: python3 tests/e2e/meeting_to_backlog.py /tmp/clip.wav --min-marcas 1 --timeout 1500
       - run: python3 tests/e2e/meeting_to_backlog.py /tmp/reunion.mp4 --min-marcas 1 --timeout 1500
+
+  e2e-usuario-nuevo:
+    # Usuario nuevo completamente aislado (Debian mínimo, HOME vacío): instala Python y Claude Code, instala el
+    # plugin con `claude plugin install` y lo prueba desde la copia instalada, con dependencias y modelo desde cero.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: tests/e2e/usuario_nuevo.sh "2.1.301"

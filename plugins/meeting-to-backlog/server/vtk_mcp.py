@@ -6,6 +6,7 @@ Tools:
   estado_reunion(job)                                   fase, progreso, rutas y métricas
   fotogramas_candidatos(job, marcas)                    candidatos cercanos a los momentos clave
   conservar_fotogramas(job, elegidos)                   fija los 4 fotogramas entregados
+  diagnostico()                                         revisa la instalación sin mostrar secretos
   limpiar_cache()                                       borra caché, temporales y candidatos
 
 El primer job crea el entorno de Python en VTK_DATA/venv (faster-whisper) y baja el modelo
@@ -21,8 +22,13 @@ import time
 import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import seguridad  # noqa: E402
+
+seguridad.privado()  # todo lo que cree el plugin: archivos 600, carpetas 700
 DATA = os.environ.setdefault("VTK_DATA", os.path.expanduser("~/.cache/meeting-to-backlog"))
 os.makedirs(DATA, exist_ok=True)
+os.chmod(DATA, 0o700)  # Claude Code puede crearla con 755; transcripciones y caché son solo del dueño
 
 TOOLS = [
     {"name": "procesar_reunion",
@@ -61,6 +67,11 @@ TOOLS = [
              "type": "object", "required": ["archivo", "motivo"], "properties": {
                  "archivo": {"type": "string", "description": "ruta devuelta por fotogramas_candidatos"},
                  "motivo": {"type": "string"}, "relacion": {"type": "string"}}}}}}},
+    {"name": "diagnostico",
+     "description": "Revisa la instalación sin mostrar secretos: Python, espacio en disco, permisos de los datos, "
+                    "carpetas sincronizadas, almacén de secretos, modo de acceso a Graph, modo híbrido y retención. "
+                    "Úsalo al instalar o cuando algo falle.",
+     "inputSchema": {"type": "object", "properties": {"salida": {"type": "string"}}}},
     {"name": "limpiar_cache",
      "description": "Borra las transcripciones cacheadas y los temporales del plugin (no toca los entregables).",
      "inputSchema": {"type": "object", "properties": {}}},
@@ -98,6 +109,8 @@ def estado(args):
     if not os.path.exists(path):
         raise ValueError("job desconocido")
     st = json.load(open(path))
+    if st.get("error"):
+        st["error"] = seguridad.limpiar_secretos(st["error"])
     if st.get("fase") == "listo":
         st["transcripcion"] = os.path.join(st["salida"], "transcripcion.md")
     if st.get("fase") == "error":
@@ -172,18 +185,19 @@ def limpiar(_):
     return {"archivos_borrados": count, "liberado_kb": round(freed / 1024, 1)}
 
 
-HANDLERS = {"procesar_reunion": procesar, "estado_reunion": estado, "fotogramas_candidatos": candidatos,
+def diagnostico(args):
+    return {"chequeos": seguridad.diagnostico(DATA, args.get("salida"))}
+
+
+HANDLERS = {"diagnostico": diagnostico, "procesar_reunion": procesar, "estado_reunion": estado, "fotogramas_candidatos": candidatos,
             "conservar_fotogramas": conservar, "limpiar_cache": limpiar}
 
 
-def _purgar_viejos(dias=2):
-    """Candidatos de más de `dias` días sin elegir: se borran al arrancar el servidor."""
-    base = os.path.join(DATA, "candidatos")
-    if os.path.isdir(base):
-        for d in os.listdir(base):
-            p = os.path.join(base, d)
-            if time.time() - os.path.getmtime(p) > dias * 86400:
-                shutil.rmtree(p, ignore_errors=True)
+def _purgar_viejos():
+    """Retención al arrancar: candidatos de fotogramas 2 días; transcripciones cacheadas y jobs, VTK_RETENCION_DIAS."""
+    seguridad.purgar(os.path.join(DATA, "candidatos"), 2)
+    seguridad.purgar(os.path.join(DATA, "cache"), seguridad.RETENCION_DIAS)
+    seguridad.purgar(os.path.join(DATA, "jobs"), seguridad.RETENCION_DIAS)
 
 
 def reply(mid, result=None, error=None):
@@ -215,7 +229,8 @@ def main():
                 out = HANDLERS[p["name"]](p.get("arguments") or {})
                 reply(mid, {"content": [{"type": "text", "text": json.dumps(out, ensure_ascii=False)}]})
             except Exception as e:
-                reply(mid, {"content": [{"type": "text", "text": f"{type(e).__name__}: {e}"}], "isError": True})
+                msg = seguridad.limpiar_secretos(f"{type(e).__name__}: {e}")
+                reply(mid, {"content": [{"type": "text", "text": msg}], "isError": True})
         elif method == "ping":
             reply(mid, {})
         else:

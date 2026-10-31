@@ -16,12 +16,17 @@ import shutil
 import sys
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import seguridad  # noqa: E402
+
 # Perfiles medidos en docs/kit-dual/video/03-rendimiento.md (Core Ultra 7 165U, CPU, int8, 8 hilos).
 # Sin BatchedInferencePipeline: era 4 % más rápido pero perdía ~8 % de las palabras y usaba +75 % de RAM.
 PERFILES = {
     "rapido": {"model": "large-v3-turbo", "beam_size": 1},   # RTF 0,43, 2,0 GB
     "preciso": {"model": "large-v3-turbo", "beam_size": 5},  # RTF 0,57, 2,1 GB
 }
+# Modelo fijado a un commit de Hugging Face (el de todas las pruebas): nadie puede cambiarlo por debajo.
+REVISION = "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf"
 
 
 def status(path, **kw):
@@ -79,7 +84,7 @@ def transcribe(media, perfil, idioma, hilos, on_progress, pct=0.0):
     p = PERFILES[perfil]
     # Caché estándar de Hugging Face (~/.cache/huggingface): si otra herramienta ya bajó el modelo,
     # no se vuelven a descargar 1,6 GB.
-    model = WhisperModel(p["model"], device="cpu", compute_type="int8", cpu_threads=hilos)
+    model = WhisperModel(p["model"], device="cpu", compute_type="int8", cpu_threads=hilos, revision=REVISION)
     kw = {"beam_size": p["beam_size"], "language": None if idioma == "auto" else idioma}
     if pct > 0:  # híbrido: bloque local continuo + tramo final en la nube, en paralelo
         import hybrid
@@ -100,6 +105,7 @@ def transcribe(media, perfil, idioma, hilos, on_progress, pct=0.0):
 
 
 def main():
+    seguridad.privado()
     fuente, salida, estado = sys.argv[1:4]
     perfil = os.environ.get("VTK_PERFIL", "rapido")
     idioma = os.environ.get("VTK_IDIOMA", "es")
@@ -158,8 +164,8 @@ def main():
                    "perfil": perfil, "huella": digest, "candidatos": len(cands), "fotogramas": n_foto,
                    "hibrido": tx.get("hibrido")}
         status(estado, **resumen)
-    except Exception as e:  # el estado lleva el error; nunca variables de entorno
-        status(estado, fase="error", error=f"{type(e).__name__}: {e}")
+    except Exception as e:  # el estado lleva el error, sin secretos
+        status(estado, fase="error", error=seguridad.limpiar_secretos(f"{type(e).__name__}: {e}"))
         raise SystemExit(1)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
