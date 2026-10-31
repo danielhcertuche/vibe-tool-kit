@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Borradores de HU de una reunión",
+  "type": "object",
+  "required": ["reunion", "hu"],
+  "properties": {
+    "reunion": {"type": "string", "description": "Carpeta o nombre de la reunión"},
+    "hu": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["n", "titulo", "como", "quiero", "para", "criterios", "evidencia", "confianza", "estado"],
+        "properties": {
+          "n": {"type": "integer"},
+          "titulo": {"type": "string", "maxLength": 120},
+          "como": {"type": "string"},
+          "quiero": {"type": "string"},
+          "para": {"type": "string"},
+          "criterios": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "evidencia": {"type": "array", "items": {"type": "string", "pattern": "^\\d{2}:\\d{2}:\\d{2}$"}, "minItems": 1},
+          "confianza": {"enum": ["alta", "media", "baja"]},
+          "falta": {"type": "string", "description": "Qué información faltó para confianza alta"},
+          "estado": {"enum": ["borrador", "aprobada", "descartada", "creada"]},
+          "work_item_id": {"type": ["integer", "null"]}
+        }
+      }
+    }
+  }
+}

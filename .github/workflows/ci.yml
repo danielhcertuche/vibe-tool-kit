@@ -30,6 +30,10 @@ jobs:
           claude --version
       - run: scripts/validate_all.sh
       - run: tests/hooks/test_hooks.sh
+      - run: python3 tests/unit/test_cupo.py
+      - run: python3 tests/unit/test_postproceso.py
+      - run: python3 tests/unit/test_red.py
+      - run: python3 tests/unit/test_seguridad.py
 
   denylist:
     runs-on: ubuntu-24.04
@@ -59,7 +63,7 @@ jobs:
           fetch-depth: 0
       - run: echo "KIT_OUT=$RUNNER_TEMP/kit-out" >> "$GITHUB_ENV"
       - run: scripts/kit_ephemeral.sh gitleaks git --redact --exit-code 1 /src
-      - run: scripts/kit_ephemeral.sh trufflehog git file:///src --fail --no-update --results=verified,unknown
+      - run: scripts/kit_ephemeral.sh trufflehog git file:///src --fail --no-update --results=verified,unknown --exclude-paths=/src/.trufflehog-exclude.txt
       - run: scripts/kit_ephemeral.sh semgrep semgrep scan --config p/default --error --metrics off /src
       - run: scripts/kit_ephemeral.sh bandit -r /src/plugins -ll
       - run: git ls-files -z '*.sh' | xargs -0 scripts/kit_ephemeral.sh shellcheck -S warning
@@ -77,3 +81,39 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: tests/smoke/install.sh "2.1.301"
+
+  e2e-reuniones:
+    # Instalación desde cero (venv + modelo de 1,6 GB) con un clip público en español
+    # (MINDS-14, CC-BY-4.0). Corre aquí y no en máquinas de usuarios con poco disco.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: clip público de referencia
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          u = "https://datasets-server.huggingface.co/rows?dataset=PolyAI/minds14&config=es-ES&split=train&offset=0&length=1"
+          row = json.load(urllib.request.urlopen(u, timeout=60))["rows"][0]["row"]
+          open("/tmp/clip.wav", "wb").write(urllib.request.urlopen(row["audio"][0]["src"], timeout=60).read())
+          PY
+      - name: ffmpeg (el runner ubuntu-24.04 no lo trae)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg
+      - name: video sintético (4 escenas, sin datos reales) con la voz del clip
+        run: |
+          ffmpeg -v error -y -stream_loop 5 -i /tmp/clip.wav -t 60 -ac 1 -ar 16000 /tmp/voz.wav
+          ffmpeg -v error -y -f lavfi -i "smptebars=s=1280x720:r=10" -f lavfi -i "testsrc2=s=1280x720:r=10" \
+            -f lavfi -i "mandelbrot=s=1280x720:r=10" -f lavfi -i "rgbtestsrc=s=1280x720:r=10" -i /tmp/voz.wav \
+            -filter_complex "[0:v]trim=0:15,setpts=PTS-STARTPTS[a];[1:v]trim=0:15,setpts=PTS-STARTPTS[b];[2:v]trim=0:15,setpts=PTS-STARTPTS[c];[3:v]trim=0:15,setpts=PTS-STARTPTS[d];[a][b][c][d]concat=n=4:v=1:a=0[v]" \
+            -map "[v]" -map 4:a -c:v libx264 -g 20 -pix_fmt yuv420p -c:a aac -shortest /tmp/reunion.mp4
+      - run: python3 tests/e2e/meeting_to_backlog.py /tmp/clip.wav --min-marcas 1 --timeout 1500
+      - run: python3 tests/e2e/meeting_to_backlog.py /tmp/reunion.mp4 --min-marcas 1 --timeout 1500
+
+  e2e-usuario-nuevo:
+    # Usuario nuevo completamente aislado (Debian mínimo, HOME vacío): instala Python y Claude Code, instala el
+    # plugin con `claude plugin install` y lo prueba desde la copia instalada, con dependencias y modelo desde cero.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: tests/e2e/usuario_nuevo.sh "2.1.301"

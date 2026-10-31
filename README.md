@@ -1,6 +1,6 @@
 # vibe-tool-kit
 
-Skills, agentes y hooks genéricos para **Claude Code** y **Codex**, distribuidos como un
+Skills, agentes, hooks y servidores MCP genéricos para **Claude Code** y **Codex**, distribuidos como un
 marketplace de plugins. Cada plugin cubre un dominio y se instala por separado.
 
 | Plugin | Qué trae | Hooks |
@@ -12,6 +12,7 @@ marketplace de plugins. Cada plugin cubre un dominio y se instala por separado.
 | `ui-review-hooks` | Recuerda cargar `ui-review` cuando el prompt pide revisar o construir UI | `UserPromptSubmit` |
 | `mcp-guard` | Niega llamadas a servidores MCP HTTP caídos antes de que cuelguen la sesión | `PreToolUse` |
 | `diagrams` | Diagramas editables (`.drawio` + `.svg`) desde un spec YAML, con validador | no |
+| `meeting-to-backlog` | Reunión grabada → transcripción en tu máquina → acta → borradores de HU para Azure Boards (con tu aprobación) | no (servidor MCP local) |
 
 ## Instalación
 

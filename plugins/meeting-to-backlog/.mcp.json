@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "meeting-to-backlog": {
+      "command": "python3",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/server/vtk_mcp.py"
+      ],
+      "env": {
+        "VTK_DATA": "${CLAUDE_PLUGIN_DATA}",
+        "VTK_PERFIL": "${user_config.PERFIL}",
+        "VTK_IDIOMA": "${user_config.IDIOMA}",
+        "GRAPH_AUTH": "${user_config.GRAPH_AUTH}",
+        "GRAPH_TENANT_ID": "${user_config.GRAPH_TENANT_ID}",
+        "GRAPH_CLIENT_ID": "${user_config.GRAPH_CLIENT_ID}",
+        "GRAPH_CLIENT_SECRET": "${user_config.GRAPH_CLIENT_SECRET}",
+        "GROQ_API_KEY": "${user_config.GROQ_API_KEY}",
+        "VTK_NUBE_MES_MIN": "${user_config.NUBE_MES_MIN}"
+      }
+    }
+  }
+}

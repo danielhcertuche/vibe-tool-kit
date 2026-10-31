@@ -49,6 +49,12 @@
       "source": "./plugins/diagrams",
       "description": "Diagramas editables (.drawio + .svg) desde un spec YAML, con validador y juez de píxeles.",
       "version": "0.1.0"
+    },
+    {
+      "name": "meeting-to-backlog",
+      "source": "./plugins/meeting-to-backlog",
+      "description": "Reuniones grabadas → transcripción local → acta y borradores de HU para Azure Boards, con aprobación humana.",
+      "version": "0.1.0"
     }
   ]
 }

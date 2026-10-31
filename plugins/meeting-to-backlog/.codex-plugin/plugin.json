@@ -1,0 +1,104 @@
+{
+  "name": "meeting-to-backlog",
+  "version": "0.1.0",
+  "description": "Grabaciones de reunión → transcripción local → acta con decisiones y pendientes → 4 fotogramas clave → borradores de HU para Azure Boards, con aprobación humana. Sin licencias premium.",
+  "author": {
+    "name": "danielhcertuche"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/danielhcertuche/vibe-tool-kit",
+  "keywords": [
+    "mcp",
+    "skill",
+    "command",
+    "reuniones",
+    "transcripcion",
+    "azure-devops"
+  ],
+  "userConfig": {
+    "PERFIL": {
+      "type": "string",
+      "title": "Perfil",
+      "description": "rapido (por defecto) o preciso: velocidad frente a exactitud de la transcripción",
+      "default": "rapido",
+      "sensitive": false
+    },
+    "IDIOMA": {
+      "type": "string",
+      "title": "Idioma",
+      "description": "Idioma de la reunión (es, en…) o auto",
+      "default": "es",
+      "sensitive": false
+    },
+    "GRAPH_AUTH": {
+      "type": "string",
+      "title": "Acceso a OneDrive/SharePoint",
+      "description": "ninguno (solo archivos locales), delegado (cada usuario inicia sesión) o aplicacion (credencial de app de tu organización)",
+      "default": "ninguno",
+      "sensitive": false
+    },
+    "GRAPH_TENANT_ID": {
+      "type": "string",
+      "title": "Tenant ID",
+      "description": "ID del tenant de Microsoft 365 (no es secreto)",
+      "default": "",
+      "sensitive": false
+    },
+    "GRAPH_CLIENT_ID": {
+      "type": "string",
+      "title": "Client ID",
+      "description": "ID de la app registrada en Entra ID (no es secreto)",
+      "default": "",
+      "sensitive": false
+    },
+    "GRAPH_CLIENT_SECRET": {
+      "type": "string",
+      "title": "Client secret",
+      "description": "Solo para el modo aplicacion. Se guarda en el almacén seguro del sistema, nunca en archivos del proyecto",
+      "default": "",
+      "sensitive": true
+    },
+    "AZDO_ORG": {
+      "type": "string",
+      "title": "Organización de Azure DevOps",
+      "description": "URL de tu organización de Azure DevOps; vacío = solo exportar CSV",
+      "default": "",
+      "sensitive": false
+    },
+    "AZDO_PROJECT": {
+      "type": "string",
+      "title": "Proyecto de Azure DevOps",
+      "description": "Proyecto donde se crean las HU aprobadas",
+      "default": "",
+      "sensitive": false
+    },
+    "AZDO_AREA": {
+      "type": "string",
+      "title": "Área",
+      "description": "Area path para las HU (opcional)",
+      "default": "",
+      "sensitive": false
+    },
+    "AZDO_TIPO": {
+      "type": "string",
+      "title": "Tipo de work item",
+      "description": "User Story, Product Backlog Item, Issue…",
+      "default": "User Story",
+      "sensitive": false
+    },
+    "GROQ_API_KEY": {
+      "type": "string",
+      "title": "Llave de Groq (opcional)",
+      "description": "Para el modo híbrido: una parte del audio se transcribe en Groq (activa Zero Data Retention en tu cuenta). Se guarda en el almacén seguro del sistema.",
+      "default": "",
+      "sensitive": true
+    },
+    "NUBE_MES_MIN": {
+      "type": "string",
+      "title": "Presupuesto mensual de nube (minutos)",
+      "description": "Opcional. Minutos de audio al mes que pueden ir a Groq además de sus límites por hora y día; vacío = solo los límites gratuitos de Groq (con 20 % de margen).",
+      "default": "",
+      "sensitive": false
+    }
+  }
+}

@@ -127,6 +127,20 @@ Los campos disponibles son:
 
 ---
 
+## Plugin de reuniones (`meeting-to-backlog`)
+
+Convierte una grabación en transcripción, acta, 4 fotogramas clave y borradores de HU. Antes de instalarlo:
+
+1. **Python 3.11 o más nuevo.** Comprueba con `python3 --version`. En Ubuntu/WSL: `sudo apt install python3 python3-venv`.
+2. **Unos 2,5 GB libres** para la primera vez (dependencias y modelo); después no vuelve a descargar.
+3. Instala: `claude plugin install meeting-to-backlog@vibe-tool-kit`.
+4. Abre Claude Code y pídele: *«ejecuta el diagnóstico de meeting-to-backlog»*. Te dirá en lenguaje simple si falta
+   algo (Python, espacio, permisos, carpetas sincronizadas) sin mostrar ningún secreto.
+5. Úsalo: `/acta /ruta/completa/de/la/reunion.mp4`. La primera vez tarda unos minutos más porque instala.
+
+Las transcripciones y fotogramas quedan solo en tu equipo y solo los puedes leer tú. Nada se crea en Azure Boards
+sin que apruebes cada HU.
+
 ## Actualizar, pausar o quitar
 
 | Quiero… | Comando |
