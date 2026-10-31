@@ -1,0 +1,13 @@
+{
+  "name": "diagrams",
+  "version": "0.1.0",
+  "description": "Diagramas editables (.drawio + .svg) desde un spec YAML, con validador y juez de píxeles.",
+  "author": {
+    "name": "danielhcertuche"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/danielhcertuche/vibe-tool-kit",
+  "keywords": [
+    "skill"
+  ]
+}

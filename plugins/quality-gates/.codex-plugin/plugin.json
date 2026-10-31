@@ -1,0 +1,13 @@
+{
+  "name": "quality-gates",
+  "version": "0.1.0",
+  "description": "Gate de calidad por lenguaje (lint, tipos, tests) y validación de SQL antes de entregar.",
+  "author": {
+    "name": "danielhcertuche"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/danielhcertuche/vibe-tool-kit",
+  "keywords": [
+    "skill"
+  ]
+}

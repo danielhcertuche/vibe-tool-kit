@@ -1,0 +1,73 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  CLAUDE_CODE_VERSION: 2.1.301
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: |
+          npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs"
+      - run: scripts/validate_all.sh
+      - run: tests/hooks/test_hooks.sh
+
+  denylist:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - run: scripts/check_denylist.sh . config/denylist.generic.txt
+      - name: lista privada del mantenedor
+        env:
+          VIBE_DENYLIST_B64: ${{ secrets.VIBE_DENYLIST_B64 }}
+        run: |
+          if [ -z "$VIBE_DENYLIST_B64" ]; then echo "::warning::sin VIBE_DENYLIST_B64 (fork o PR externo)"; exit 0; fi
+          umask 077; echo "$VIBE_DENYLIST_B64" | base64 -d > "$RUNNER_TEMP/dl.txt"
+          scripts/check_denylist.sh . "$RUNNER_TEMP/dl.txt"
+
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      KIT_OUT: ${{ runner.temp }}/kit-out
+      KIT_CPUS: "2"
+      KIT_MEM: 3g
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - run: scripts/kit_ephemeral.sh gitleaks git --redact --exit-code 1 /src
+      - run: scripts/kit_ephemeral.sh trufflehog git file:///src --fail --no-update --results=verified,unknown
+      - run: scripts/kit_ephemeral.sh semgrep semgrep scan --config p/default --error --metrics off /src
+      - run: scripts/kit_ephemeral.sh bandit -r /src/plugins -ll
+      - run: scripts/kit_ephemeral.sh shellcheck $(git ls-files '*.sh')
+      - run: scripts/kit_ephemeral.sh osv-scanner scan source -r /src
+      - run: scripts/kit_ephemeral.sh --verify-clean
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: kit-metrics
+          path: ${{ runner.temp }}/kit-out/metrics.tsv
+
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: tests/smoke/install.sh "2.1.301"

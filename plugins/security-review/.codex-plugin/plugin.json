@@ -1,0 +1,14 @@
+{
+  "name": "security-review",
+  "version": "0.1.0",
+  "description": "Revisión de seguridad: threat modeling, supply chain y gating de releases.",
+  "author": {
+    "name": "danielhcertuche"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/danielhcertuche/vibe-tool-kit",
+  "keywords": [
+    "agent",
+    "skill"
+  ]
+}

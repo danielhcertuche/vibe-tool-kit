@@ -1,0 +1,22 @@
+{
+  "name": "ui-review",
+  "version": "0.1.0",
+  "description": "Filtro contra UI genérica de IA: visual, accesibilidad, layout móvil, textos y comentarios.",
+  "author": {
+    "name": "danielhcertuche"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/danielhcertuche/vibe-tool-kit",
+  "keywords": [
+    "skill"
+  ],
+  "userConfig": {
+    "DESIGN_SYSTEM": {
+      "type": "string",
+      "title": "Design System",
+      "description": "Design system del proyecto; vacío = tokens de fallback.",
+      "default": "",
+      "sensitive": false
+    }
+  }
+}

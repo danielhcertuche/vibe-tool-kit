@@ -1,0 +1,92 @@
+# Plantilla ER mínima funcional.
+#   python3 ~/.claude/skills/diagramas-drawio/scripts/forge.py build er.example.yaml --out-dir /tmp/x
+# El spec NUNCA lleva coordenadas: la geometría la calcula el generador.
+kind: er
+title: "ER Cotización — ejemplo"
+subtitle: "Plantilla del skill diagramas-drawio · reemplazar por el modelo real"
+
+source:
+  repo: mi-repo
+  branch: main
+  as_of: "2026-08-19"
+
+max_columns: 3            # máximo de columnas de tablas por banda
+
+# Los grupos son bandas de dominio con barra de color. Agrupar por DOMINIO,
+# no por esquema: el color es lo que hace el diagrama legible de un vistazo.
+groups:
+  - {id: cot, title: "Cotización", subtitle: "Cabecera y versiones", theme: blue}
+  - {id: mat, title: "Materiales y precios", theme: orange}
+  - {id: cat, title: "Catálogos", theme: neutral}
+
+# Tablas legítimamente sin relaciones: se silencia el aviso y queda la decisión
+# por escrito en vez de repetirse en cada revisión.
+allow_orphan: []
+
+tables:
+  - name: Cotizacion
+    group: cot
+    schema: dbo
+    note: "1 fila = 1 cotización"          # el grano, escrito. El campo que más rinde.
+    columns:
+      - {name: IdGeneral, type: "varchar(20)", key: PK}
+      - {name: IdCliente, type: int, key: FK, ref: "Cliente.Id"}
+      - {name: Fecha, type: date, nullable: false}
+      - {name: Coleccion, type: "varchar(50)"}
+      - {name: CotizadoPor, type: "varchar(100)"}
+
+  - name: VersionCotizacion
+    group: cot
+    schema: dbo
+    note: "1 fila = 1 versión de 1 cotización"
+    columns:
+      - {name: IdVersion, type: bigint, key: PK}
+      - {name: IdGeneralCotizacion, type: "varchar(20)", key: FK, ref: "Cotizacion.IdGeneral"}
+      - {name: Alternativa, type: int}
+      - {name: Validez, type: date}
+
+  - name: PrecioMaterialCentro
+    group: mat
+    schema: dbo
+    note: "1 fila = 1 material × 1 centro × 1 vigencia"
+    columns:
+      # PK compuesta que además es doble FK: el caso típico de tabla puente.
+      - {name: CodigoMaterial, type: "varchar(20)", key: "PK,FK", ref: "Material.CodigoSap"}
+      - {name: CodigoCentro, type: "varchar(5)", key: "PK,FK", ref: "Centro.CodigoCentro"}
+      - {name: PrecioEstandar, type: "decimal(18,4)"}
+      - {name: FechaDesde, type: date, key: PK}
+
+  - name: Material
+    group: mat
+    schema: dbo
+    focus: keys              # en el mapa general, sólo llaves + "… +N columnas"
+    columns:
+      - {name: CodigoSap, type: "varchar(20)", key: PK}
+      - {name: Descripcion, type: "varchar(200)"}
+      - {name: TipoMaterial, type: "varchar(10)"}
+      - {name: GrupoDeArticulos, type: "varchar(30)"}
+      - {name: FibraPrincipal, type: "varchar(10)"}
+
+  - name: Cliente
+    group: cat
+    schema: dbo
+    columns:                 # forma corta "nombre:tipo:llave" para catálogos
+      - "Id:int:PK"
+      - "Descripcion:varchar(20)"
+      - "Tipo:varchar(10)"
+
+  - name: Centro
+    group: cat
+    schema: dbo
+    columns:
+      - "CodigoCentro:varchar(5):PK"
+      - "DescripcionCentro:varchar(200)"
+
+# Sólo para lo que NO es una FK física: relación lógica, join por convención,
+# FK que la base nunca declaró. Las FK normales ya salen de los `ref:`.
+relations:
+  - from: "Material.CodigoSap"
+    to: "Centro.CodigoCentro"
+    card: "N:N"
+    style: soft
+    label: "sin FK en la BD"

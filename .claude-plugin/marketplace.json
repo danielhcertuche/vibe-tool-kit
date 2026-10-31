@@ -1,0 +1,54 @@
+{
+  "name": "vibe-tool-kit",
+  "owner": {
+    "name": "danielhcertuche"
+  },
+  "metadata": {
+    "description": "Skills, agentes y hooks genéricos para Claude Code y Codex.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "agent-team",
+      "source": "./plugins/agent-team",
+      "description": "Protocolo multi-agente (task packets, handoffs) y scaffolding de artefactos con linaje.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "quality-gates",
+      "source": "./plugins/quality-gates",
+      "description": "Gate de calidad por lenguaje (lint, tipos, tests) y validación de SQL antes de entregar.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "security-review",
+      "source": "./plugins/security-review",
+      "description": "Revisión de seguridad: threat modeling, supply chain y gating de releases.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "ui-review",
+      "source": "./plugins/ui-review",
+      "description": "Filtro contra UI genérica de IA: visual, accesibilidad, layout móvil, textos y comentarios.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "ui-review-hooks",
+      "source": "./plugins/ui-review-hooks",
+      "description": "Hook opt-in: recuerda cargar ui-review cuando el prompt pide revisar o construir UI.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "mcp-guard",
+      "source": "./plugins/mcp-guard",
+      "description": "Hook opt-in: bloquea llamadas a servidores MCP HTTP caídos antes de que cuelguen la sesión.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "diagrams",
+      "source": "./plugins/diagrams",
+      "description": "Diagramas editables (.drawio + .svg) desde un spec YAML, con validador y juez de píxeles.",
+      "version": "0.1.0"
+    }
+  ]
+}

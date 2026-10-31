@@ -1,0 +1,13 @@
+vibe-tool-kit
+Copyright 2026 danielhcertuche
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes third-party material under the MIT License. Each piece keeps
+its original copyright notice and license text next to the files:
+
+- plugins/ui-review/skills/antislop* and antislop-human/contrast-check.py
+  Derived from miqdadbadjuber/anti-slop (commit 388cbe3), MIT License,
+  Copyright (c) 2026 Miqdad Badjuber. Full text: plugins/ui-review/skills/antislop/LICENSE.
+  Local changes: integration rules, parameterized design system (DESIGN_SYSTEM),
+  Spanish wording.

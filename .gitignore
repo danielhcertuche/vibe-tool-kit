@@ -1,0 +1,4 @@
+tests/evals/**/results/
+.kit-out/
+__pycache__/
+*.pyc

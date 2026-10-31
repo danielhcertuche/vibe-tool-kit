@@ -1,0 +1,29 @@
+{
+  "name": "mcp-guard",
+  "version": "0.1.0",
+  "description": "Hook opt-in: bloquea llamadas a servidores MCP HTTP caídos antes de que cuelguen la sesión.",
+  "author": {
+    "name": "danielhcertuche"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/danielhcertuche/vibe-tool-kit",
+  "keywords": [
+    "hook"
+  ],
+  "userConfig": {
+    "MCP_GUARD_PORTS": {
+      "type": "string",
+      "title": "Mcp Guard Ports",
+      "description": "JSON {\"mcp__<server>\": puerto}; vacío = no bloquea nada.",
+      "default": "{}",
+      "sensitive": false
+    },
+    "MCP_GUARD_START_HINT": {
+      "type": "string",
+      "title": "Mcp Guard Start Hint",
+      "description": "Mensaje cuando el servidor está caído.",
+      "default": "Arranca el servidor MCP y reintenta.",
+      "sensitive": false
+    }
+  }
+}

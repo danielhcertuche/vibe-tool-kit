@@ -1,0 +1,68 @@
+# Plantilla del estilo LINAJE: carriles por capa, tablas con bloque de
+# metadatos y columna K (llave MEDIDA, no declarada), flechas de flujo.
+#   python3 ~/.claude/skills/diagramas-drawio/scripts/forge.py build linaje.example.yaml --out-dir /tmp/x
+kind: linaje
+title: "L2 · Tela–ruta: la única ancla con llave real"
+subtitle: "301.034 filas = 301.034 combinaciones de co_reftel + co_ruta + co_proceso"
+
+source: {repo: mi-repo, branch: main, as_of: "2026-10-30"}
+
+# El color dice el ESTADO de la tabla, no su dominio. Es lo que distingue este
+# estilo del ER: aquí el lector pregunta "¿esta tabla sirve o sobra?".
+legend:
+  - {color: canon,  label: "Fuente que se conserva"}
+  - {color: subset, label: "Variante o subconjunto"}
+  - {color: dup,    label: "Duplicada o redundante"}
+  - {color: origen, label: "Origen fuera de Unity Catalog"}
+
+lanes:                      # carriles, de izquierda a derecha: el sentido del flujo
+  - {id: origen, title: "ORIGEN (fuera de Unity Catalog)"}
+  - {id: silver, title: "SILVER · slv_ejemplo_legado"}
+  - {id: gold,   title: "GOLD · gld_textil_tejido"}
+
+tables:
+  - name: Legado de ventas
+    lane: origen
+    estado: origen
+    info:                   # volumen, ritmo y EVIDENCIA: es el corazón del estilo
+      - "extracción por ODBC → bronze"
+      - "✎ Azure Data Factory · pl_ejemplo_ingesta"
+    columns:
+      - "textil/tela_ruta/::"
+
+  - name: tbl_ejemplo_linea_hist
+    lane: silver
+    schema: silver.slv_ejemplo_legado
+    estado: canon
+    info:
+      - "⟳ diaria ~14:47 UTC · s/ su job"
+      - "· catálogo: cambio 2026-10-10 09:10"
+    columns: ["co_reftel:int", "co_ruta:int", "de_ruta:string"]
+
+  - name: tbl_ejemplo_linea_delta
+    lane: silver
+    schema: silver.slv_ejemplo_legado
+    estado: dup
+    info: ["⟳ diaria ~14:47 UTC · aporta 0 filas"]
+    note: "El incremental no añade nada frente al CTAS diario."
+    columns: ["co_reftel:int", "co_ruta:int"]
+
+  - name: tbl_ejemplo_linea
+    lane: gold
+    schema: gold_ui_prd.gld_textil_tejido
+    estado: canon
+    info:
+      - "301.034 filas · llave medida sin duplicados"
+      - "⟳ últ. 2026-10-28 15:26 · CTAS"
+    columns:
+      - "co_reftel:int:K"
+      - "co_ruta:int:K"
+      - "co_proceso:int:K"
+      - "de_ruta:string"
+
+# Flujos de datos: flecha simple. `card` SOLO cuando hay perfil de duplicidad
+# medido; sin medirlo, dibujar pata de gallina es inventarse la cardinalidad.
+flows:
+  - {from: Legado de ventas, to: tbl_ejemplo_linea_hist, label: "ADF · …_silver_to_silver · overwrite"}
+  - {from: Legado de ventas, to: tbl_ejemplo_linea_delta, label: "ADF · …_silver_to_silver"}
+  - {from: tbl_ejemplo_linea_hist, to: tbl_ejemplo_linea, label: "ADF · …_silver_to_gold · CTAS · 301.034 filas"}

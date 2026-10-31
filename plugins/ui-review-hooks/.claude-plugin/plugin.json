@@ -1,0 +1,22 @@
+{
+  "name": "ui-review-hooks",
+  "version": "0.1.0",
+  "description": "Hook opt-in: recuerda cargar ui-review cuando el prompt pide revisar o construir UI.",
+  "author": {
+    "name": "danielhcertuche"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/danielhcertuche/vibe-tool-kit",
+  "keywords": [
+    "hook"
+  ],
+  "userConfig": {
+    "DESIGN_SYSTEM_KEYWORDS": {
+      "type": "string",
+      "title": "Design System Keywords",
+      "description": "Palabras (csv) que también disparan el hook.",
+      "default": "",
+      "sensitive": false
+    }
+  }
+}

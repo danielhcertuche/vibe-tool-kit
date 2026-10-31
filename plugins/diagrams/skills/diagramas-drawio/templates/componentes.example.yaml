@@ -1,0 +1,81 @@
+# Plantilla de diagrama de componentes / infraestructura.
+#   python3 ~/.claude/skills/diagramas-drawio/scripts/forge.py build componentes.example.yaml --out-dir /tmp/x
+kind: componentes
+title: "Mi App — Arquitectura y componentes reales"
+subtitle: "Componentes verificados en código. Lo no provisionado se marca explícitamente."
+
+source:
+  repo: mi-repo
+  branch: main
+  commit: "abc1234"
+
+style:
+  width: 1740
+
+# El orden de las filas es DEPENDENCIA FUNCIONAL, no cronología de despliegue.
+# Fila 1 = camino de una petición (usuario → identidad → app → datos): es lo
+# primero que alguien nuevo necesita leer. Lo de soporte va debajo.
+rows:
+  - {sections: [users, identity, app, data]}
+  - {sections: [ai, integraciones]}
+  - {sections: [pendiente, legend]}
+
+sections:
+  - {id: users,    title: "Usuarios",                theme: neutral, span: 0.7}
+  - {id: identity, title: "Identidad y autorización", subtitle: "Entra ID", theme: blue, span: 1}
+  - {id: app,      title: "Aplicación",  subtitle: "Databricks App · un solo proceso", theme: blue, span: 1.6}
+  - {id: data,     title: "Persistencia", subtitle: "Unity Catalog", theme: green, span: 1}
+  - {id: ai,       title: "Servicios de IA", theme: purple, span: 1}
+  - {id: integraciones, title: "Integraciones externas", theme: teal, span: 2}
+  - {id: pendiente, title: "Endurecimiento pendiente antes de producción", theme: orange, span: 2}
+  - {id: legend,   title: "Leyenda", theme: neutral, span: 1}   # id reservado: se rellena solo
+
+nodes:
+  - {id: browser, section: users, kind: web, label: "Navegador", sublabel: "SPA React 19 + Vite"}
+
+  - {id: appreg, section: identity, kind: identity, label: "App Registration + App Roles",
+     sublabel: "OIDC, claim roles", status: real}
+
+  - {id: spa, section: app, kind: web, label: "React SPA", sublabel: "servida por StaticFiles"}
+  - {id: api, section: app, kind: api, label: "FastAPI", sublabel: "/api/v1 · routers → services → repositories"}
+  - {id: conn, section: app, kind: runtime, label: "Databricks SQL Connector",
+     sublabel: "OAuth de la identidad de la App"}
+
+  - {id: platinum, section: data, kind: lakehouse, label: "Platinum",
+     sublabel: "platinum_ui_{env}.plt_textil"}
+
+  - {id: llm, section: ai, kind: ai, label: "Azure OpenAI", sublabel: "deployment compartido"}
+
+  - {id: graph, section: integraciones, kind: graph, label: "Microsoft Graph", sublabel: "directorio"}
+  - {id: sp, section: integraciones, kind: sharepoint, label: "SharePoint", sublabel: "/General/Proyectos"}
+
+  # status: pending → borde discontinuo + insignia. Nunca se dibuja como real
+  # algo que no existe: es lo que hace que alguien crea el diagrama la próxima vez.
+  - {id: kv, section: pendiente, kind: vault, label: "Key Vault + Managed Identity",
+     sublabel: "hoy los secretos son App Settings", status: pending}
+  - {id: obs, section: pendiente, kind: monitor, label: "Observabilidad",
+     sublabel: "métricas y alertas centralizadas", status: pending}
+
+connections:
+  - {from: browser, to: spa, type: secure, label: "HTTPS · mismo origen"}
+  - {from: spa, to: api, type: request, label: "HTTP/JSON"}
+  - {from: browser, to: appreg, type: secure, label: "login MSAL"}
+  - {from: api, to: conn, type: request, label: "consultas"}
+  - {from: conn, to: platinum, type: request, label: "Databricks SQL"}
+  - {from: api, to: llm, type: integration, label: "inferencia"}
+  - {from: api, to: graph, type: integration, label: "directorio"}
+  - {from: api, to: sp, type: integration, label: "documentos"}
+  - {from: api, to: obs, type: telemetry, label: "telemetría"}
+  - {from: kv, to: api, type: integration, label: "secretos"}
+
+legend:
+  - {label: "Solicitud / flujo de datos", type: request}
+  - {label: "Conexión autenticada sobre HTTPS", type: secure}
+  - {label: "Integración con servicio externo", type: integration}
+  - {label: "Telemetría / monitoreo", type: telemetry}
+  - {label: "CI / despliegue", type: pipeline}
+
+icon_legend:
+  - {icon: lock, label: "Requiere autenticación"}
+  - {icon: shield, label: "Cifrado extremo a extremo"}
+  - {icon: pending, label: "Pendiente de provisión"}

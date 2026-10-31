@@ -1,0 +1,4 @@
+interface:
+  display_name: "Team Security Review"
+  short_description: "Security audit and release gate workflow"
+  default_prompt: "Use this skill to produce severity-ranked security findings with concrete remediation."

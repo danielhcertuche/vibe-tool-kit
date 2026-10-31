@@ -1,0 +1,13 @@
+{
+  "name": "agent-team",
+  "version": "0.1.0",
+  "description": "Protocolo multi-agente (task packets, handoffs) y scaffolding de artefactos con linaje.",
+  "author": {
+    "name": "danielhcertuche"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/danielhcertuche/vibe-tool-kit",
+  "keywords": [
+    "skill"
+  ]
+}
