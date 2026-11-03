@@ -5,7 +5,7 @@ faster-whisper==1.2.1
 ctranslate2==4.8.1
 av==18.0.0
 onnxruntime==1.28.0
-tokenizers==0.23.1
+tokenizers==0.23.3
 huggingface-hub==1.26.0
 numpy==2.4.6  # 2.5 exige Python 3.12; 2.4.6 es la última que sirve en 3.11 (Debian 12)
 # Pillow: escribir los fotogramas en JPEG y deduplicarlos (dHash). 13.0.0 corrige 23 CVE de la 12.x.
